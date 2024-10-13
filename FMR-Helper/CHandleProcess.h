@@ -34,7 +34,7 @@ public:
 
 	bool AttachToProcess();
 
-	bool IsProcessRunning() const;
+	bool IsAttached() const;
 
 	uintptr_t FindCachedPattern(const char* pattern);
 

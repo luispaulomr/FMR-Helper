@@ -51,7 +51,7 @@ bool CHandleProcess::AttachToProcess()
     return true;
 }
 
-bool CHandleProcess::IsProcessRunning() const
+bool CHandleProcess::IsAttached() const
 {
     if (!m_hProcess) {
         std::cout << "[CHandleProcess::IsProcessRunning] ERROR: Process has not been attached" << "\n";

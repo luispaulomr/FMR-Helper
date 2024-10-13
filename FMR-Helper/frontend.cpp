@@ -16,17 +16,23 @@ int main(int argc, char *argv[])
 	while (true) {
 		Sleep(DELAY_MS);
 
-		if (p_ModGame->IsGameRunning()) {
+		if (p_ModGame->IsAttached()) {
+
+			//p_ModGame->LoadGameData();
 
 			std::cout << "[MAIN] Game is running" << "\n";
 
 			if (p_ModGame->IsDuel()) {
 				std::cout << "[MAIN] Duel has started" << "\n";
+
+				p_ModGame->GetMyHandCards();
+				p_ModGame->GetMyTableCards();
+				p_ModGame->GetPathBinFile();
 			}
 		}
 		else {
 			std::cout << "[MAIN] Game is not running" << "\n";
-			p_ModGame->RetryConnection();
+			p_ModGame->RetryAttach();
 		}
 	}
 }
