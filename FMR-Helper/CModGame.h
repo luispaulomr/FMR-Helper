@@ -36,6 +36,11 @@ private:
 		size_t len;
 	} GameConsts_t;
 
+	typedef struct FusionData {
+		std::vector<size_t> card;
+		std::vector<size_t> result;
+	} FusionData_t;
+
 	const GameConsts_t GAME_CONSTS[MAX_ADDR_OFFSET_INDEX] = {
 		{0xa82020 + 0xea024,	2},		/* ENEMY_HEALTH */
 		{0xa82020 + 0x1a7ae4,	113},	/* MY_HAND_CARDS */
@@ -44,7 +49,8 @@ private:
 	};
 
 	std::unique_ptr<CHandleProcess> m_pHandleProcess;
-	std::vector<ImageData_t> m_small_cards;
+	std::vector<ImageData_t> m_small_images;
+	std::vector<FusionData_t> m_fusions;
 
 private:
 
@@ -52,9 +58,13 @@ private:
 
 	std::vector<BYTE> _ReadData(GameConsts_t) const;
 
-	bool _LoadGameData();
+	bool _ReadBinFile(std::string path_file, size_t offset, size_t len, std::vector<BYTE>& buf) const;
 
-	bool _ReadBinFile(std::string path_file, std::vector<ImageData_t>& data) const;
+	bool _LoadSmallImages(std::vector<ImageData_t>&) const;
+
+	bool _LoadFusions(std::vector<FusionData_t>&) const;
+
+	bool _LoadGameData();
 
 public:
 
@@ -71,7 +81,5 @@ public:
 	bool IsAttached() const;
 
 	bool IsDuel() const;
-
-	bool LoadGameData();
 
 };
