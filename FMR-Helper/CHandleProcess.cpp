@@ -9,6 +9,7 @@ CHandleProcess::CHandleProcess(const std::wstring& str_window_name, const std::w
     m_hProcess = nullptr;
     m_windowName = str_window_name;
     m_exeName = str_exe_name;
+    GetSystemInfo(&m_sysInfo);
 }
 
 bool CHandleProcess::AttachToProcess()
@@ -44,9 +45,6 @@ bool CHandleProcess::AttachToProcess()
         std::cout << "[CHandleProcess::AttachToProcess] ERROR when calling GetModuleInformation: " << GetLastErrorAsString() << "\n";
         return false;
     }
-
-    SYSTEM_INFO m_sysInfo;
-    GetSystemInfo(&m_sysInfo);
 
     return true;
 }

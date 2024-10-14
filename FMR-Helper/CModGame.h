@@ -10,9 +10,13 @@ class CModGame {
 
 private:
 
-	const uint32_t MAX_CARDS = 722;
-	const uint32_t MAX_HAND_CARDS = 5;
-	const uint32_t LEN_DATA_SMALL_IMAGE = 40 * 32 + 512;
+	const size_t MAX_CARDS = 722;
+	const size_t MAX_HAND_CARDS = 5;
+	const size_t LEN_DATA_SMALL_IMAGE = 40 * 32;
+	const size_t LEN_CLUT_SMALL_IMAGE = 512;
+	const size_t LEN_TOTAL_SMALL_IMAGE = LEN_DATA_SMALL_IMAGE + LEN_CLUT_SMALL_IMAGE;
+	const size_t BIN_FILE_SMALL_IMAGES_OFFSET = 0x16a8c38;
+	const size_t BIN_FILE_INC = 0x930;
 
 	enum ADDR_OFFSET_INDEXES {
 		I_ENEMY_HEALTH = 0,
@@ -21,6 +25,11 @@ private:
 		I_PATH_BIN_FILE,
 		MAX_ADDR_OFFSET_INDEX
 	};
+
+	typedef struct ImageData {
+		std::vector<BYTE> data;
+		std::vector<BYTE> clut;
+	} ImageData_t;
 
 	typedef struct GameConsts {
 		uintptr_t offset;
@@ -35,14 +44,17 @@ private:
 	};
 
 	std::unique_ptr<CHandleProcess> m_pHandleProcess;
-	std::vector<std::vector<uint8_t>> m_small_cards;
-	//uint8_t m_small_cards[MAX_CARDS][LEN_DATA_SMALL_IMAGE];
+	std::vector<ImageData_t> m_small_cards;
 
 private:
 
 	uint16_t _GetEnemyHealth() const;
 
-	std::vector<uint8_t> _ReadData(GameConsts_t) const;
+	std::vector<BYTE> _ReadData(GameConsts_t) const;
+
+	bool _LoadGameData();
+
+	bool _ReadBinFile(std::string path_file, std::vector<ImageData_t>& data) const;
 
 public:
 
@@ -59,5 +71,7 @@ public:
 	bool IsAttached() const;
 
 	bool IsDuel() const;
+
+	bool LoadGameData();
 
 };

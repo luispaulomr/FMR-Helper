@@ -2,6 +2,7 @@
 
 #include <iomanip>
 #include <filesystem>
+#include <fstream>
 
 CModGame::CModGame(const std::wstring& str_window_name, const std::wstring& str_exe_name)
 {
@@ -18,6 +19,10 @@ CModGame::CModGame(const std::wstring& str_window_name, const std::wstring& str_
 		std::cout << "[CModGame::CModGame] ERROR: Call to CHandleProcess::AttachToProcess failed." << "\n";
 		return;
 	}
+
+	if (!_LoadGameData()) {
+		std::cout << "[CModGame::CModGame] ERROR: Could not load game data." << "\n";
+	}
 }
 
 bool CModGame::RetryAttach()
@@ -30,6 +35,10 @@ bool CModGame::RetryAttach()
 	if (!m_pHandleProcess->AttachToProcess()) {
 		std::cout << "[CModGame::RetryAttach] ERROR: Call to CHandleProcess::AttachToProcess failed." << "\n";
 		return false;
+	}
+
+	if (!_LoadGameData()) {
+		std::cout << "[CModGame::CModGame] ERROR: Could not load game data." << "\n";
 	}
 
 	return true;
@@ -57,9 +66,62 @@ uint16_t CModGame::_GetEnemyHealth() const
 	uint16_t health = 0;
 	std::memcpy(&health, data.data(), data.size());
 
-	std::cout << health << "\n";
-
 	return health;
+}
+
+bool CModGame::_ReadBinFile(std::string path_file, std::vector<ImageData_t>& images) const
+{
+	std::ifstream in_file(path_file, std::ios_base::in | std::ios_base::binary);
+
+	if (!in_file) {
+		std::cout << "[CModGame::_ReadBinFile] ERROR: Could not open binary file for reading." << "\n";
+		images.resize(0);
+		return false;
+	}
+
+	images.resize(MAX_CARDS);
+	size_t len_to_read = (LEN_TOTAL_SMALL_IMAGE + BIN_FILE_INC) * images.size();
+	std::vector<BYTE> buf(len_to_read);
+
+	in_file.seekg(BIN_FILE_SMALL_IMAGES_OFFSET, std::ios::beg);
+	in_file.read(reinterpret_cast<char*>(buf.data()), len_to_read);
+	
+	if (len_to_read != in_file.gcount()) {
+		std::cout << "[CModGame::_ReadBinFile] ERROR: Could not read from binary file." << "\n";
+		images.resize(0);
+		return false;
+	}
+
+	for (auto i = 0; i < images.size(); ++i) {
+		images[i].data.resize(LEN_DATA_SMALL_IMAGE);
+		images[i].clut.resize(LEN_CLUT_SMALL_IMAGE);
+		size_t inc = i * BIN_FILE_INC;
+
+		std::copy(buf.begin() + inc,
+				  buf.begin() + inc + images[i].data.size(),
+				  images[i].data.data());
+
+		std::copy(buf.begin() + inc + LEN_DATA_SMALL_IMAGE,
+				  buf.begin() + inc + LEN_DATA_SMALL_IMAGE + images[i].clut.size(),
+				  images[i].clut.data());
+	}
+	return true;
+}
+
+bool CModGame::_LoadGameData()
+{
+	if (m_small_cards.size()) {
+		return true;
+	}
+
+	std::string path_file = GetPathBinFile();
+
+	if (path_file.empty()) {
+		std::cout << "[CModGame::_LoadGameData] ERROR: Empty path for binary file." << "\n";
+		return false;
+	}
+
+	return _ReadBinFile(path_file, m_small_cards);
 }
 
 std::vector<uint16_t> CModGame::GetMyHandCards() const

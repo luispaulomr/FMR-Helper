@@ -18,16 +18,10 @@ int main(int argc, char *argv[])
 
 		if (p_ModGame->IsAttached()) {
 
-			//p_ModGame->LoadGameData();
-
 			std::cout << "[MAIN] Game is running" << "\n";
 
 			if (p_ModGame->IsDuel()) {
 				std::cout << "[MAIN] Duel has started" << "\n";
-
-				p_ModGame->GetMyHandCards();
-				p_ModGame->GetMyTableCards();
-				p_ModGame->GetPathBinFile();
 			}
 		}
 		else {

@@ -14,7 +14,7 @@ private:
 
 	HANDLE m_hProcess = nullptr;
 	MODULEINFO m_modInfo = { 0 };
-	SYSTEM_INFO m_sysInfo;
+	SYSTEM_INFO m_sysInfo = { 0 };
 	HMODULE m_hModule = nullptr;
 	std::wstring m_windowName = L"";
 	std::wstring m_exeName = L"";
