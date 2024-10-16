@@ -46,13 +46,14 @@ private:
 	} ImageData_t;
 
 	typedef struct FusionData {
-		std::vector<size_t> card;
-		std::vector<size_t> result;
+		uint16_t card_1;
+		uint16_t card_2;
+		uint16_t result;
 	} FusionData_t;
 
 	std::unique_ptr<CHandleProcess> m_pHandleProcess;
 	std::vector<ImageData_t> m_small_images;
-	std::vector<FusionData_t> m_fusions;
+	std::vector<std::vector<FusionData_t>> m_fusions;
 	std::string m_path_bin_file;
 
 private:
@@ -65,7 +66,7 @@ private:
 
 	bool _LoadSmallImages(std::vector<ImageData_t>&) const;
 
-	bool _LoadFusions(std::vector<FusionData_t>&) const;
+	bool _LoadFusions(std::vector<std::vector<FusionData_t>>&) const;
 
 	bool _LoadGameData();
 

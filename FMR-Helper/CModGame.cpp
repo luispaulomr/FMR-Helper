@@ -138,7 +138,7 @@ bool CModGame::_LoadSmallImages(std::vector<ImageData_t>& images) const
 	return true;
 }
 
-bool CModGame::_LoadFusions(std::vector<FusionData_t>& fusions) const
+bool CModGame::_LoadFusions(std::vector<std::vector<FusionData_t>>& fusions) const
 {
 	fusions.resize(MAX_CARDS);
 	size_t len_to_read = LEN_TOTAL_FUSIONS;
@@ -153,10 +153,6 @@ bool CModGame::_LoadFusions(std::vector<FusionData_t>& fusions) const
 	}
 
 	for (auto i = 0; i < fusions.size(); ++i) {
-		//images[i].data.resize(LEN_DATA_SMALL_IMAGE);
-		//images[i].clut.resize(LEN_CLUT_SMALL_IMAGE);
-		//size_t inc = i * BIN_FILE_INC;
-
 		uint16_t pos_to_read = 0;
 		std::memcpy(&pos_to_read, buf.data() + 2 + i * 2, 2);
 
@@ -166,56 +162,39 @@ bool CModGame::_LoadFusions(std::vector<FusionData_t>& fusions) const
 
 		uint8_t num_of_fusions = 0;
 		std::memcpy(&num_of_fusions, buf.data() + pos_to_read, 1);
+		pos_to_read++;
 
+		if (!num_of_fusions) {
+			std::memcpy(&num_of_fusions, buf.data() + pos_to_read, 1);
+			pos_to_read++;
+			num_of_fusions = 511 - num_of_fusions;
+		}
 
-	/* CHECK THIS CODE!!! if num_of_fusions is 0 and next number is not 0 */
-	/* Maybe the number of fusion is given by n + 1 (low byte) and n (high byte), not sure */
-	//if (num_of_fusions == 0) {
-	//	uint8_t tmp_byte;
+		while (num_of_fusions > 0) {
+			BYTE bytes_to_read[5] = { 0 };
+			uint32_t bytes_fusion[4] = { 0 };
 
-	//	input_stream.read(reinterpret_cast<char*>(&tmp_byte), 1);
+			std::memcpy(bytes_to_read, buf.data() + pos_to_read, sizeof(bytes_to_read));
+			pos_to_read += sizeof(bytes_to_read);
 
-	//	num_of_fusions = 511 - tmp_byte;
-	//}
+			bytes_fusion[0] = (bytes_to_read[0] & 3) << 8 | bytes_to_read[1];
+			bytes_fusion[1] = (bytes_to_read[0] >> 2 & 3) << 8 | bytes_to_read[2];
+			bytes_fusion[2] = (bytes_to_read[0] >> 4 & 3) << 8 | bytes_to_read[3];
+			bytes_fusion[3] = (bytes_to_read[0] >> 6 & 3) << 8 | bytes_to_read[4];
 
-		//std::copy(buf.begin() + inc,
-		//	buf.begin() + inc + images[i].data.size(),
-		//	images[i].data.data());
+			fusions[i].push_back(FusionData_t{static_cast<uint16_t>(i), static_cast<uint16_t>(bytes_fusion[0] - 1), static_cast<uint16_t>(bytes_fusion[1] - 1)});
 
-		//std::copy(buf.begin() + inc + LEN_DATA_SMALL_IMAGE,
-		//	buf.begin() + inc + LEN_DATA_SMALL_IMAGE + images[i].clut.size(),
-		//	images[i].clut.data());
+			--num_of_fusions;
+
+			if (num_of_fusions > 0) {
+
+				fusions[i].push_back(FusionData_t{static_cast<uint16_t>(i), static_cast<uint16_t>(bytes_fusion[2] - 1) , static_cast<uint16_t>(bytes_fusion[3] - 1)});
+				--num_of_fusions;
+			}
+		}
 	}
 
 	return true;
-
-
-
-
-	//while (num_of_fusions > 0) {
-	//	uint8_t bytes_to_read[5];
-	//	uint32_t bytes_fusion[4] = { 0 };
-
-	//	input_stream.read(reinterpret_cast<char*>(&bytes_to_read), sizeof(bytes_to_read));
-
-	//	bytes_fusion[0] = (bytes_to_read[0] & 3) << 8 | bytes_to_read[1];
-	//	bytes_fusion[1] = (bytes_to_read[0] >> 2 & 3) << 8 | bytes_to_read[2];
-	//	bytes_fusion[2] = (bytes_to_read[0] >> 4 & 3) << 8 | bytes_to_read[3];
-	//	bytes_fusion[3] = (bytes_to_read[0] >> 6 & 3) << 8 | bytes_to_read[4];
-
-	//	fusions.push_back(Fusion{ static_cast<uint16_t>(index), static_cast<uint16_t>(bytes_fusion[0] - 1), static_cast<uint16_t>(bytes_fusion[1] - 1) });
-
-	//	--num_of_fusions;
-
-	//	if (num_of_fusions > 0) {
-
-	//		fusions.push_back(Fusion{ static_cast<uint16_t>(index), static_cast<uint16_t>(bytes_fusion[2] - 1) , static_cast<uint16_t>(bytes_fusion[3] - 1) });
-	//		--num_of_fusions;
-
-	//	}
-	//}
-
-	//return fusions;
 }
 
 bool CModGame::_LoadGameData()
@@ -229,7 +208,7 @@ bool CModGame::_LoadGameData()
 		}
 	}
 
-	if (m_small_images.size()) {
+	if (m_small_images.size() && m_fusions.size()) {
 		return true;
 	}
 
