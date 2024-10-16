@@ -108,27 +108,31 @@ bool CModGame::_ReadBinFile
 bool CModGame::_LoadSmallImages(std::vector<ImageData_t>& images) const
 {
 	images.resize(MAX_CARDS);
-	size_t len_to_read = (LEN_TOTAL_SMALL_IMAGE + BIN_FILE_INC) * images.size();
+	size_t len_to_read = (LEN_TOTAL_SMALL_IMAGE + BIN_FILE_SMALL_IMAGES_INC) * images.size();
 	std::vector<BYTE> buf(len_to_read);
 
-	if (!_ReadBinFile(GetPathBinFile(), BIN_FILE_SMALL_IMAGES_OFFSET, len_to_read, buf)) {
+	if (!_ReadBinFile(m_path_bin_file, BIN_FILE_SMALL_IMAGES_OFFSET, len_to_read, buf)) {
 		std::cout << "[CModGame::_LoadSmallImages] ERROR: Could not read binary file." << "\n";
 		images.resize(0);
 		return false;
 	}
 
-	for (auto i = 0; i < buf.size(); ++i) {
+	for (auto i = 0; i < images.size(); ++i) {
 		images[i].data.resize(LEN_DATA_SMALL_IMAGE);
 		images[i].clut.resize(LEN_CLUT_SMALL_IMAGE);
-		size_t inc = i * BIN_FILE_INC;
+		auto addr_to_read = buf.begin() + i * BIN_FILE_SMALL_IMAGES_INC;
 
-		std::copy(buf.begin() + inc,
-			buf.begin() + inc + images[i].data.size(),
-			images[i].data.data());
+		size_t _addr_to_read = addr_to_read - buf.begin();
 
-		std::copy(buf.begin() + inc + LEN_DATA_SMALL_IMAGE,
-			buf.begin() + inc + LEN_DATA_SMALL_IMAGE + images[i].clut.size(),
-			images[i].clut.data());
+		std::copy(addr_to_read,
+				  addr_to_read + images[i].data.size(),
+				  images[i].data.data());
+
+		addr_to_read += LEN_DATA_SMALL_IMAGE;
+
+		std::copy(addr_to_read,
+				  addr_to_read + images[i].clut.size(),
+				  images[i].clut.data());
 	}
 
 	return true;
@@ -137,34 +141,94 @@ bool CModGame::_LoadSmallImages(std::vector<ImageData_t>& images) const
 bool CModGame::_LoadFusions(std::vector<FusionData_t>& fusions) const
 {
 	fusions.resize(MAX_CARDS);
-	//size_t len_to_read = (LEN_TOTAL_SMALL_IMAGE + BIN_FILE_INC) * images.size();
-	//std::vector<BYTE> buf(len_to_read);
+	size_t len_to_read = LEN_TOTAL_FUSIONS;
+	std::vector<BYTE> buf(len_to_read);
 
-	//if (!_ReadBinFile(GetPathBinFile(), BIN_FILE_SMALL_IMAGES_OFFSET, len_to_read, buf)) {
-	//	std::cout << "[CModGame::_LoadSmallImages] ERROR: Could not read binary file." << "\n";
-	//	images.resize(0);
-	//	return false;
+	static size_t max_pos_to_read = 0;
+
+	if (!_ReadBinFile(m_path_bin_file, BIN_FILE_FUSIONS_OFFSET, len_to_read, buf)) {
+		std::cout << "[CModGame::_LoadFusions] ERROR: Could not read binary file." << "\n";
+		fusions.resize(0);
+		return false;
+	}
+
+	for (auto i = 0; i < fusions.size(); ++i) {
+		//images[i].data.resize(LEN_DATA_SMALL_IMAGE);
+		//images[i].clut.resize(LEN_CLUT_SMALL_IMAGE);
+		//size_t inc = i * BIN_FILE_INC;
+
+		uint16_t pos_to_read = 0;
+		std::memcpy(&pos_to_read, buf.data() + 2 + i * 2, 2);
+
+		if (!pos_to_read) {
+			continue;
+		}
+
+		uint8_t num_of_fusions = 0;
+		std::memcpy(&num_of_fusions, buf.data() + pos_to_read, 1);
+
+
+	/* CHECK THIS CODE!!! if num_of_fusions is 0 and next number is not 0 */
+	/* Maybe the number of fusion is given by n + 1 (low byte) and n (high byte), not sure */
+	//if (num_of_fusions == 0) {
+	//	uint8_t tmp_byte;
+
+	//	input_stream.read(reinterpret_cast<char*>(&tmp_byte), 1);
+
+	//	num_of_fusions = 511 - tmp_byte;
 	//}
 
-	//for (auto i = 0; i < buf.size(); ++i) {
-	//	images[i].data.resize(LEN_DATA_SMALL_IMAGE);
-	//	images[i].clut.resize(LEN_CLUT_SMALL_IMAGE);
-	//	size_t inc = i * BIN_FILE_INC;
+		//std::copy(buf.begin() + inc,
+		//	buf.begin() + inc + images[i].data.size(),
+		//	images[i].data.data());
 
-	//	std::copy(buf.begin() + inc,
-	//		buf.begin() + inc + images[i].data.size(),
-	//		images[i].data.data());
-
-	//	std::copy(buf.begin() + inc + LEN_DATA_SMALL_IMAGE,
-	//		buf.begin() + inc + LEN_DATA_SMALL_IMAGE + images[i].clut.size(),
-	//		images[i].clut.data());
-	//}
+		//std::copy(buf.begin() + inc + LEN_DATA_SMALL_IMAGE,
+		//	buf.begin() + inc + LEN_DATA_SMALL_IMAGE + images[i].clut.size(),
+		//	images[i].clut.data());
+	}
 
 	return true;
+
+
+
+
+	//while (num_of_fusions > 0) {
+	//	uint8_t bytes_to_read[5];
+	//	uint32_t bytes_fusion[4] = { 0 };
+
+	//	input_stream.read(reinterpret_cast<char*>(&bytes_to_read), sizeof(bytes_to_read));
+
+	//	bytes_fusion[0] = (bytes_to_read[0] & 3) << 8 | bytes_to_read[1];
+	//	bytes_fusion[1] = (bytes_to_read[0] >> 2 & 3) << 8 | bytes_to_read[2];
+	//	bytes_fusion[2] = (bytes_to_read[0] >> 4 & 3) << 8 | bytes_to_read[3];
+	//	bytes_fusion[3] = (bytes_to_read[0] >> 6 & 3) << 8 | bytes_to_read[4];
+
+	//	fusions.push_back(Fusion{ static_cast<uint16_t>(index), static_cast<uint16_t>(bytes_fusion[0] - 1), static_cast<uint16_t>(bytes_fusion[1] - 1) });
+
+	//	--num_of_fusions;
+
+	//	if (num_of_fusions > 0) {
+
+	//		fusions.push_back(Fusion{ static_cast<uint16_t>(index), static_cast<uint16_t>(bytes_fusion[2] - 1) , static_cast<uint16_t>(bytes_fusion[3] - 1) });
+	//		--num_of_fusions;
+
+	//	}
+	//}
+
+	//return fusions;
 }
 
 bool CModGame::_LoadGameData()
 {
+	if (m_path_bin_file.empty()) {
+		m_path_bin_file = _GetPathBinFile();
+
+		if (m_path_bin_file.empty()) {
+			std::cout << "[CModGame::LoadGameData] ERROR: Could not get path to binary file." << "\n";
+			return false;
+		}
+	}
+
 	if (m_small_images.size()) {
 		return true;
 	}
@@ -217,7 +281,7 @@ std::vector<uint16_t> CModGame::GetMyTableCards() const
 	return cards;
 }
 
-std::string CModGame::GetPathBinFile() const
+std::string CModGame::_GetPathBinFile() const
 {
 	auto mem = _ReadData(GAME_CONSTS[I_PATH_BIN_FILE]);
 	return std::string(mem.begin(), mem.end());
