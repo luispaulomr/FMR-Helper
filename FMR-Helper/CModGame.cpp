@@ -144,8 +144,6 @@ bool CModGame::_LoadFusions(std::vector<std::vector<FusionData_t>>& fusions) con
 	size_t len_to_read = LEN_TOTAL_FUSIONS;
 	std::vector<BYTE> buf(len_to_read);
 
-	static size_t max_pos_to_read = 0;
-
 	if (!_ReadBinFile(m_path_bin_file, BIN_FILE_FUSIONS_OFFSET, len_to_read, buf)) {
 		std::cout << "[CModGame::_LoadFusions] ERROR: Could not read binary file." << "\n";
 		fusions.resize(0);
@@ -197,6 +195,37 @@ bool CModGame::_LoadFusions(std::vector<std::vector<FusionData_t>>& fusions) con
 	return true;
 }
 
+bool CModGame::_LoadCards(std::vector<CardData_t>& cards) const
+{
+	cards.resize(MAX_CARDS);
+	size_t len_to_read = 10000;
+	std::vector<BYTE> buf(len_to_read);
+
+	if (!_ReadBinFile(m_path_bin_file, BIN_FILE_CARDS_OFFSET, len_to_read, buf)) {
+		std::cout << "[CModGame::_LoadCards] ERROR: Could not read binary file." << "\n";
+		cards.resize(0);
+		return false;
+	}
+
+	for (auto i = 0; i < cards.size(); ++i) {
+		uint32_t num = 0;
+		size_t inc = 0;
+
+		/* totally empirical data */
+		if (i > 366) {
+			inc = 304;
+		}
+
+		auto pos_to_read = buf.data() + i * BIN_FILE_CARDS_INC + inc;
+		std::memcpy(&num, pos_to_read, sizeof(num));
+
+		cards[i].atk = (num & 0x1ff) * 10;
+		cards[i].def = ((num >> 9) & 0x1ff) * 10;
+	}
+
+	std::cout << "LUL" << "\n";
+}
+
 bool CModGame::_LoadGameData()
 {
 	if (m_path_bin_file.empty()) {
@@ -219,7 +248,11 @@ bool CModGame::_LoadGameData()
 
 	if (!_LoadFusions(m_fusions)) {
 		std::cout << "[CModGame::LoadGameData] ERROR: Could not load fusions from binary file." << "\n";
-		m_fusions.resize(0);
+		return false;
+	}
+
+	if (!_LoadCards(m_cards)) {
+		std::cout << "[CModGame::LoadGameData] ERROR: Could not load cards from binary file." << "\n";
 		return false;
 	}
 }

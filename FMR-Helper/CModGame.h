@@ -19,6 +19,9 @@ private:
 	const size_t BIN_FILE_SMALL_IMAGES_INC = 0x930;
 	const size_t BIN_FILE_FUSIONS_OFFSET = 0x023e6608;
 	const size_t LEN_TOTAL_FUSIONS = 100000;
+	const size_t BIN_FILE_CARDS_OFFSET = 0x21598C;
+	const size_t BIN_FILE_CARDS_OFFSET_2 = 0x216078;
+	const size_t BIN_FILE_CARDS_INC = 4;
 
 	enum ADDR_OFFSET_INDEXES {
 		I_ENEMY_HEALTH = 0,
@@ -40,6 +43,11 @@ private:
 		{0x36f100,				255},	/* PATH_BIN_FILE */
 	};
 
+	typedef struct CardData {
+		uint16_t atk;
+		uint16_t def;
+	} CardData_t;
+
 	typedef struct ImageData {
 		std::vector<BYTE> data;
 		std::vector<BYTE> clut;
@@ -54,6 +62,7 @@ private:
 	std::unique_ptr<CHandleProcess> m_pHandleProcess;
 	std::vector<ImageData_t> m_small_images;
 	std::vector<std::vector<FusionData_t>> m_fusions;
+	std::vector<CardData_t> m_cards;
 	std::string m_path_bin_file;
 
 private:
@@ -67,6 +76,8 @@ private:
 	bool _LoadSmallImages(std::vector<ImageData_t>&) const;
 
 	bool _LoadFusions(std::vector<std::vector<FusionData_t>>&) const;
+
+	bool _LoadCards(std::vector<CardData_t>&) const;
 
 	bool _LoadGameData();
 
