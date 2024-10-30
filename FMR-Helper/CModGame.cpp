@@ -3,6 +3,7 @@
 #include <iomanip>
 #include <filesystem>
 #include <fstream>
+#include "Cards.h"
 
 CModGame::CModGame(const std::wstring& str_window_name, const std::wstring& str_exe_name)
 {
@@ -138,7 +139,7 @@ bool CModGame::_LoadSmallImages(std::vector<ImageData_t>& images) const
 	return true;
 }
 
-bool CModGame::_LoadFusions(std::vector<std::vector<FusionData_t>>& fusions) const
+bool CModGame::_LoadFusions(std::vector<std::vector<Card_t>>& fusions) const
 {
 	fusions.resize(MAX_CARDS);
 	size_t len_to_read = LEN_TOTAL_FUSIONS;
@@ -156,6 +157,12 @@ bool CModGame::_LoadFusions(std::vector<std::vector<FusionData_t>>& fusions) con
 
 		if (!pos_to_read) {
 			continue;
+		}
+
+		/* totally empirical data */
+
+		if (pos_to_read > 2032) {
+			pos_to_read += 320;
 		}
 
 		uint8_t num_of_fusions = 0;
@@ -180,13 +187,32 @@ bool CModGame::_LoadFusions(std::vector<std::vector<FusionData_t>>& fusions) con
 			bytes_fusion[2] = (bytes_to_read[0] >> 4 & 3) << 8 | bytes_to_read[3];
 			bytes_fusion[3] = (bytes_to_read[0] >> 6 & 3) << 8 | bytes_to_read[4];
 
-			fusions[i].push_back(FusionData_t{static_cast<uint16_t>(i), static_cast<uint16_t>(bytes_fusion[0] - 1), static_cast<uint16_t>(bytes_fusion[1] - 1)});
+			/* TODO: refactor a little bit */
+
+			{
+				Card_t card;
+
+				card.cards.push_back(static_cast<uint16_t>(i));
+				card.cards.push_back(static_cast<uint16_t>(bytes_fusion[0]));
+				card.card = static_cast<uint16_t>(bytes_fusion[1]);
+
+				fusions[i].push_back(card);
+			}
 
 			--num_of_fusions;
 
 			if (num_of_fusions > 0) {
 
-				fusions[i].push_back(FusionData_t{static_cast<uint16_t>(i), static_cast<uint16_t>(bytes_fusion[2] - 1) , static_cast<uint16_t>(bytes_fusion[3] - 1)});
+				{
+					Card_t card;
+
+					card.cards.push_back(static_cast<uint16_t>(i));
+					card.cards.push_back(static_cast<uint16_t>(bytes_fusion[2]));
+					card.card = static_cast<uint16_t>(bytes_fusion[3]);
+
+					fusions[i].push_back(card);
+				}
+
 				--num_of_fusions;
 			}
 		}
@@ -222,8 +248,6 @@ bool CModGame::_LoadCards(std::vector<CardData_t>& cards) const
 		cards[i].atk = (num & 0x1ff) * 10;
 		cards[i].def = ((num >> 9) & 0x1ff) * 10;
 	}
-
-	std::cout << "LUL" << "\n";
 }
 
 bool CModGame::_LoadGameData()
@@ -302,4 +326,12 @@ std::string CModGame::_GetPathBinFile() const
 bool CModGame::IsDuel() const
 {
 	return (_GetEnemyHealth() != 0);
+}
+
+std::vector<Card_t> CModGame::GetMyFusions()
+{
+	auto table_cards = GetMyTableCards();
+	auto hand_cards = GetMyHandCards();
+
+	return GetFusions(table_cards, hand_cards, m_fusions);
 }

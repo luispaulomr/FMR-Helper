@@ -5,6 +5,7 @@
 #include <vector>
 #include <memory>
 #include "CHandleProcess.h"
+#include "Cards.h"
 
 class CModGame {
 
@@ -53,15 +54,9 @@ private:
 		std::vector<BYTE> clut;
 	} ImageData_t;
 
-	typedef struct FusionData {
-		uint16_t card_1;
-		uint16_t card_2;
-		uint16_t result;
-	} FusionData_t;
-
 	std::unique_ptr<CHandleProcess> m_pHandleProcess;
 	std::vector<ImageData_t> m_small_images;
-	std::vector<std::vector<FusionData_t>> m_fusions;
+	std::vector<std::vector<Card_t>> m_fusions;
 	std::vector<CardData_t> m_cards;
 	std::string m_path_bin_file;
 
@@ -75,7 +70,7 @@ private:
 
 	bool _LoadSmallImages(std::vector<ImageData_t>&) const;
 
-	bool _LoadFusions(std::vector<std::vector<FusionData_t>>&) const;
+	bool _LoadFusions(std::vector<std::vector<Card_t>>&) const;
 
 	bool _LoadCards(std::vector<CardData_t>&) const;
 
@@ -96,5 +91,7 @@ public:
 	bool IsAttached() const;
 
 	bool IsDuel() const;
+
+	std::vector<Card_t> GetMyFusions();
 
 };
