@@ -39,7 +39,7 @@ private:
 
 	const GameConsts_t GAME_CONSTS[MAX_ADDR_OFFSET_INDEX] = {
 		{0xa82020 + 0xea024,	2},		/* ENEMY_HEALTH */
-		{0xa82020 + 0x1a7ae4,	113},	/* MY_HAND_CARDS */
+		{0xa82020 + 0x1a7ae4,	140},	/* MY_HAND_CARDS */
 		{0xa82020 + 0x1a7b70,	124},	/* MY_TABLE_CARDS */
 		{0x36f100,				255},	/* PATH_BIN_FILE */
 	};

@@ -363,6 +363,7 @@ void CModGame::PrintMyFusions(const std::vector<Card_t> fusions) const
 			std::cout << fusion.uid_cards[i] << "(" << fusion.cards[i] << ")" << " ";
 		}
 		std::cout << "ATK: " << m_cards[fusion.card].atk;
+		std::cout << "(" << fusion.card << ")";
 		std::cout << "\n";
 	}
 }
