@@ -11,7 +11,7 @@ static void _CreateCard(uint16_t card, Card_t& card_1, Card_t& card_2, Card_t& c
     card_result.card = card;
 }
 
-static bool _GetFusion(Card_t& card_1, Card_t& card_2, Card_t& card_result, std::vector<std::vector<Card_t>>& fusions)
+static bool _GetFusion(Card_t& card_1, Card_t& card_2, Card_t& card_result, const std::vector<std::vector<Card_t>>& fusions)
 {
     for (auto uid_card_1 : card_1.uid_cards) {
         for (auto uid_card_2 : card_2.uid_cards) {
@@ -53,14 +53,14 @@ static bool _GetFusion(Card_t& card_1, Card_t& card_2, Card_t& card_result, std:
 static std::vector<Card_t> _GetFusionFirstIteration(
     std::vector<uint16_t>& table_cards,
     std::vector<uint16_t>& hand_cards,
-    std::vector<std::vector<Card_t>>& fusions)
+    const std::vector<std::vector<Card_t>>& fusions)
 {
     std::vector<Card_t> ret;
 
     /* get fusions for hand cards */
 
     for (auto i = 0; i < 5; ++i) {
-        for (auto j = i + 1; j < 4; ++j) {
+        for (auto j = i + 1; j < 5; ++j) {
 
             Card_t card_1;
             card_1.card = hand_cards[i];
@@ -111,7 +111,7 @@ static std::vector<Card_t> _GetFusionFirstIteration(
 static std::vector<Card_t> _GetFusionsNthIteration(
     std::vector<uint16_t>& table_cards,
     std::vector<uint16_t>& hand_cards,
-    std::vector<std::vector<Card_t>>& fusions,
+    const std::vector<std::vector<Card_t>>& fusions,
     std::vector<Card_t>& prev_results)
 {
     std::vector<Card_t> ret;
@@ -140,7 +140,7 @@ static std::vector<Card_t> _GetFusionsNthIteration(
 std::vector<Card_t> GetFusions(
     std::vector<uint16_t>& table_cards,
     std::vector<uint16_t>& hand_cards,
-    std::vector<std::vector<Card_t>>& fusions)
+    const std::vector<std::vector<Card_t>>& fusions)
 {
     std::vector<Card_t> ret;
     bool isFirstRun = true;

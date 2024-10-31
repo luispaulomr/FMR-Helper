@@ -78,6 +78,8 @@ private:
 
 	std::string _GetPathBinFile() const;
 
+	//bool _cmp_cards(Card_t a, Card_t b) const;
+
 public:
 
 	CModGame(const std::wstring& str_window_name, const std::wstring& str_exe_name);
@@ -93,5 +95,7 @@ public:
 	bool IsDuel() const;
 
 	std::vector<Card_t> GetMyFusions();
+
+	void PrintMyFusions(const std::vector<Card_t> fusions) const;
 
 };

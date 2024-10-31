@@ -18,4 +18,4 @@ typedef struct Card {
 std::vector<Card_t> GetFusions(
     std::vector<uint16_t>& table_cards,
     std::vector<uint16_t>& hand_cards,
-    std::vector<std::vector<Card_t>>& fusions);
+    const std::vector<std::vector<Card_t>>& fusions);

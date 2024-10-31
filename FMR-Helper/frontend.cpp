@@ -23,7 +23,9 @@ int main(int argc, char *argv[])
 			if (p_ModGame->IsDuel()) {
 				std::cout << "[MAIN] Duel has started" << "\n";
 
-				p_ModGame->GetMyFusions();
+				auto fusions = p_ModGame->GetMyFusions();
+
+				p_ModGame->PrintMyFusions(fusions);
 			}
 		}
 		else {

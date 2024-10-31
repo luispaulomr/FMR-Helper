@@ -3,6 +3,7 @@
 #include <iomanip>
 #include <filesystem>
 #include <fstream>
+#include <algorithm>
 #include "Cards.h"
 
 CModGame::CModGame(const std::wstring& str_window_name, const std::wstring& str_exe_name)
@@ -334,10 +335,34 @@ bool CModGame::IsDuel() const
 	return (_GetEnemyHealth() != 0);
 }
 
+//bool CModGame::_cmp_cards(const Card_t& a, const Card_t& b) const
+//{
+//	return (m_cards[a.card].atk > m_cards[b.card].atk);
+//}
+
 std::vector<Card_t> CModGame::GetMyFusions()
 {
 	auto table_cards = GetMyTableCards();
 	auto hand_cards = GetMyHandCards();
 
-	return GetFusions(table_cards, hand_cards, m_fusions);
+	auto fusions = GetFusions(table_cards, hand_cards, m_fusions);
+
+	//std::sort(fusions.begin(), fusions.end(), _cmp_cards);
+
+	std::sort(fusions.begin(), fusions.end(), [&cards = std::as_const(m_cards)](const auto& card_1, const auto& card_2) {
+		return (cards[card_1.card].atk > cards[card_2.card].atk);
+	});
+
+	return fusions;
+}
+
+void CModGame::PrintMyFusions(const std::vector<Card_t> fusions) const
+{
+	for (auto& fusion : fusions) {
+		for (auto i = 0; i < fusion.cards.size(); ++i) {
+			std::cout << fusion.uid_cards[i] << "(" << fusion.cards[i] << ")" << " ";
+		}
+		std::cout << "ATK: " << m_cards[fusion.card].atk;
+		std::cout << "\n";
+	}
 }
