@@ -151,6 +151,8 @@ bool CModGame::_LoadFusions(std::vector<std::vector<Card_t>>& fusions) const
 		return false;
 	}
 
+	/* totally empirical data */
+
 	size_t len_data = 2048;
 	size_t num_data = 32;
 	std::vector<BYTE> buf(len_data * num_data);
@@ -197,8 +199,8 @@ bool CModGame::_LoadFusions(std::vector<std::vector<Card_t>>& fusions) const
 				Card_t card;
 
 				card.cards.push_back(static_cast<uint16_t>(i));
-				card.cards.push_back(static_cast<uint16_t>(bytes_fusion[0]));
-				card.card = static_cast<uint16_t>(bytes_fusion[1]);
+				card.cards.push_back(static_cast<uint16_t>(bytes_fusion[0]) - 1);
+				card.card = static_cast<uint16_t>(bytes_fusion[1]) - 1;
 
 				fusions[i].push_back(card);
 			}
@@ -211,8 +213,8 @@ bool CModGame::_LoadFusions(std::vector<std::vector<Card_t>>& fusions) const
 					Card_t card;
 
 					card.cards.push_back(static_cast<uint16_t>(i));
-					card.cards.push_back(static_cast<uint16_t>(bytes_fusion[2]));
-					card.card = static_cast<uint16_t>(bytes_fusion[3]);
+					card.cards.push_back(static_cast<uint16_t>(bytes_fusion[2]) - 1);
+					card.card = static_cast<uint16_t>(bytes_fusion[3]) - 1;
 
 					fusions[i].push_back(card);
 				}

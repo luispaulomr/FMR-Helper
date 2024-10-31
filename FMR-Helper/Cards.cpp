@@ -21,6 +21,8 @@ static bool _GetFusion(Card_t& card_1, Card_t& card_2, Card_t& card_result, std:
         }
     }
 
+    /* need to check both ways. Some cards only list fusions on one way but not the other */
+
     for (auto& t_card : fusions[card_1.card]) {
         
         if (t_card.cards[1] == card_2.card) {
