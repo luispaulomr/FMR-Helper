@@ -23,25 +23,25 @@ static bool _GetFusion(Card_t& card_1, Card_t& card_2, Card_t& card_result, cons
 
     /* need to check both ways. Some cards only list fusions on one way but not the other */
 
-    for (auto& t_card : fusions[card_1.card]) {
+    for (auto& card : fusions[card_1.card]) {
         
-        if (t_card.cards[1] == card_2.card) {
+        if (card.cards[1] == card_2.card) {
 
             /* this is a valid fusion!! */
 
-            _CreateCard(t_card.card, card_1, card_2, card_result);
+            _CreateCard(card.card, card_1, card_2, card_result);
             return true;
         }
 
     }
 
-    for (auto& t_card : fusions[card_2.card]) {
+    for (auto& card : fusions[card_2.card]) {
 
-        if (t_card.cards[1] == card_1.card) {
+        if (card.cards[1] == card_1.card) {
 
             /* this is a valid fusion!! */
 
-            _CreateCard(t_card.card, card_1, card_2, card_result);
+            _CreateCard(card.card, card_1, card_2, card_result);
             return true;
         }
 
@@ -122,7 +122,8 @@ static std::vector<Card_t> _GetFusionsNthIteration(
         for (auto i = 0; i < 5; ++i) {
 
             Card_t card_2;
-            card_2.cards.push_back(hand_cards[i]);
+            card_2.card = hand_cards[i];
+            card_2.cards.push_back(card_2.card);
             card_2.uid_cards.push_back(i + 5);
 
             Card_t card_result;
@@ -143,11 +144,10 @@ std::vector<Card_t> GetFusions(
     const std::vector<std::vector<Card_t>>& fusions)
 {
     std::vector<Card_t> ret;
+    std::vector<Card_t> tmp;
     bool isFirstRun = true;
 
     while (1) {
-
-        std::vector<Card_t> tmp;
 
         if (isFirstRun) {
             tmp = _GetFusionFirstIteration(table_cards, hand_cards, fusions);
