@@ -16,8 +16,11 @@ private:
 	const size_t LEN_DATA_SMALL_IMAGE = 40 * 32;
 	const size_t LEN_CLUT_SMALL_IMAGE = 512;
 	const size_t LEN_TOTAL_SMALL_IMAGE = LEN_DATA_SMALL_IMAGE + LEN_CLUT_SMALL_IMAGE;
+	const size_t LEN_TOTAL_IMAGE = 14336;
+	const size_t LEN_TOTAL_IMAGES = 25000000;
+	const size_t BIN_FILE_IMAGES_OFFSET = 0x1847598;
 	const size_t BIN_FILE_SMALL_IMAGES_OFFSET = 0x16a8c38;
-	const size_t BIN_FILE_SMALL_IMAGES_INC = 0x930;
+	const size_t BIN_FILE_SMALL_IMAGES_INC = 10304 + 672;
 	const size_t BIN_FILE_FUSIONS_OFFSET = 0x023e6608;
 	const size_t LEN_TOTAL_FUSIONS = 100000;
 	const size_t BIN_FILE_CARDS_OFFSET = 0x21598C;
@@ -96,6 +99,6 @@ public:
 
 	std::vector<Card_t> GetMyFusions();
 
-	void PrintMyFusions(const std::vector<Card_t> fusions) const;
+	void PrintMyFusions(const std::vector<Card_t>& fusions) const;
 
 };
