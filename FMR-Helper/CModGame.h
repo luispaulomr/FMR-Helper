@@ -21,6 +21,9 @@ private:
 	const size_t BIN_FILE_IMAGES_OFFSET = 0x1847598;
 	const size_t BIN_FILE_SMALL_IMAGES_OFFSET = 0x16a8c38;
 	const size_t BIN_FILE_SMALL_IMAGES_INC = 10304 + 672;
+	const size_t SMALL_IMAGE_WIDTH = 102;
+	const size_t SMALL_IMAGE_HEIGHT = 96;
+	const size_t SMALLIMAGE_BPP = 4;
 	const size_t BIN_FILE_FUSIONS_OFFSET = 0x023e6608;
 	const size_t LEN_TOTAL_FUSIONS = 100000;
 	const size_t BIN_FILE_CARDS_OFFSET = 0x21598C;
@@ -52,13 +55,8 @@ private:
 		uint16_t def;
 	} CardData_t;
 
-	typedef struct ImageData {
-		std::vector<BYTE> data;
-		std::vector<BYTE> clut;
-	} ImageData_t;
-
 	std::unique_ptr<CHandleProcess> m_pHandleProcess;
-	std::vector<ImageData_t> m_small_images;
+	std::vector<std::vector<BYTE>> m_small_images;
 	std::vector<std::vector<Card_t>> m_fusions;
 	std::vector<CardData_t> m_cards;
 	std::string m_path_bin_file;
@@ -71,7 +69,7 @@ private:
 
 	bool _ReadBinFile(std::string path_file, size_t offset, size_t len, std::vector<BYTE>& buf) const;
 
-	bool _LoadSmallImages(std::vector<ImageData_t>&) const;
+	bool _LoadSmallImages(std::vector<std::vector<BYTE>>&, const std::vector<std::vector<Card_t>>&) const;
 
 	bool _LoadFusions(std::vector<std::vector<Card_t>>&) const;
 
@@ -80,6 +78,8 @@ private:
 	bool _LoadGameData();
 
 	std::string _GetPathBinFile() const;
+
+	void TIMtoRGB(std::vector<BYTE> data, std::vector<BYTE> clut, std::vector<BYTE> RGB, size_t width, size_t height) const;
 
 	//bool _cmp_cards(Card_t a, Card_t b) const;
 
