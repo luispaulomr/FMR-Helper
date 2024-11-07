@@ -21,8 +21,8 @@ private:
 	const size_t BIN_FILE_IMAGES_OFFSET = 0x1847598;
 	const size_t BIN_FILE_SMALL_IMAGES_OFFSET = 0x16a8c38;
 	const size_t BIN_FILE_SMALL_IMAGES_INC = 10304 + 672;
-	const size_t SMALL_IMAGE_WIDTH = 102;
-	const size_t SMALL_IMAGE_HEIGHT = 96;
+	const size_t SMALL_IMAGE_WIDTH = 40;
+	const size_t SMALL_IMAGE_HEIGHT = 32;
 	const size_t SMALLIMAGE_BPP = 4;
 	const size_t BIN_FILE_FUSIONS_OFFSET = 0x023e6608;
 	const size_t LEN_TOTAL_FUSIONS = 100000;
@@ -79,7 +79,11 @@ private:
 
 	std::string _GetPathBinFile() const;
 
-	void TIMtoRGB(std::vector<BYTE> data, std::vector<BYTE> clut, std::vector<BYTE> RGB, size_t width, size_t height) const;
+	void TIMtoRGB(const std::vector<BYTE>& data,
+				  const std::vector<BYTE>& clut,
+				  std::vector<BYTE>& RGB,
+				  size_t width,
+			      size_t height) const;
 
 	//bool _cmp_cards(Card_t a, Card_t b) const;
 

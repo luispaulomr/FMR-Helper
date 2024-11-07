@@ -113,46 +113,39 @@ uint32_t Get32bitColor(uint16_t clut)
 	uint32_t red = (clut & 0x001f) * 8;
 	uint32_t green = ((clut & 0x03e0) >> 5) * 8;
 	uint32_t blue = ((clut & 0x7c00) >> 10) * 8;
-	//uint16_t alpha = (clut & 0x8000) >> 15;
 
 	uint32_t ret = 0x00;
 
-	//ret = static_cast<uint16_t>(red) << 16;
-	//
-	//ret |= static_cast<uint16_t>(green) << 8;
-
-	//ret |= static_cast<uint16_t>(blue);
-
-	// red:         0111 1100 0000 0000
-	// green:       0000 0011 1110 0000
-	// blue:        0000 0000 0001 1111
+	/* 
+	 * red:   0111 1100 0000 0000
+	 * green: 0000 0011 1110 0000
+	 * blue:  0000 0000 0001 1111
+	 */
 
 	ret = (static_cast<uint32_t>(red) << 16) & 0x00ff0000;
 	ret |= ((static_cast<uint32_t>(green) << 8) & 0x0000ff00);
 	ret |= ((static_cast<uint32_t>(blue)) & 0x000000ff);
 
-	//uint16_t ret = (uint8_t)((uint64_t)((uint32_t) red << 16 | (uint32_t) green << 8 | (uint32_t) blue | (uint32_t) alpha << 24) & (uint64_t) -1);
-
 	return ret;
 }
 
-uint32_t CLUTColor32bit(std::vector<uint8_t> cluts, int index) {
+uint32_t CLUTColor32bit(const std::vector<uint8_t>& cluts, int index) {
 
 	index *= 2;
 
 	uint16_t clut = static_cast<uint16_t>(cluts[index]) | (static_cast<uint16_t>(cluts[index + 1]) << 8);
 
-	//uint8_t ret = static_cast<uint8_t>(Get16bitColor(clut) & 0xff);
-
 	uint32_t ret = Get32bitColor(clut);
-
-	//uint16_t ret = clut;
 
 	return ret;
 
 }
 
-void CModGame::TIMtoRGB(std::vector<BYTE> data, std::vector<BYTE> clut, std::vector<BYTE> RGB, size_t width, size_t height) const
+void CModGame::TIMtoRGB(const std::vector<BYTE>& data,
+						const std::vector<BYTE>& clut,
+						std::vector<BYTE>& RGB,
+						size_t width,
+						size_t height) const
 {
 	auto it_image = data.begin();
 
@@ -177,12 +170,28 @@ void CModGame::TIMtoRGB(std::vector<BYTE> data, std::vector<BYTE> clut, std::vec
 
 			++it_image;
 
+			if (it_image == data.end()) {
+				return;
+			}
+
 		}
 
 	}
 }
 
-bool CModGame::_LoadSmallImages(std::vector<std::vector<BYTE>>& images, const std::vector<std::vector<Card_t>>& fusions) const
+#include <sstream>
+
+std::string int_to_hex(BYTE i)
+{
+	std::stringstream stream;
+	stream << "0x"
+		<< std::setfill('0') << std::setw(2)
+		<< std::hex << i;
+	return stream.str();
+}
+
+bool CModGame::_LoadSmallImages(std::vector<std::vector<BYTE>>& images,
+							    const std::vector<std::vector<Card_t>>& fusions) const
 {
 	images.resize(MAX_CARDS);
 	size_t len_to_read = LEN_TOTAL_IMAGES;
@@ -211,10 +220,6 @@ bool CModGame::_LoadSmallImages(std::vector<std::vector<BYTE>>& images, const st
 	std::vector<BYTE> image_clut(LEN_CLUT_SMALL_IMAGE);
 
 	for (auto i = 0; i < images.size(); ++i) {
-		if (!fusions[i].size()) {
-			continue;
-		}
-
 		images[i].resize(SMALL_IMAGE_WIDTH * SMALL_IMAGE_HEIGHT * SMALLIMAGE_BPP);
 
 		auto addr_to_read = buf.begin() + LEN_TOTAL_IMAGE * i + BIN_FILE_SMALL_IMAGES_INC;
@@ -231,6 +236,23 @@ bool CModGame::_LoadSmallImages(std::vector<std::vector<BYTE>>& images, const st
 
 		TIMtoRGB(image_data, image_clut, images[i], SMALL_IMAGE_WIDTH, SMALL_IMAGE_HEIGHT);
 	}
+
+	std::ofstream myfile;
+	myfile.open("C:\\Users\\lribeiro\\Desktop\\myimage.h");
+	myfile << "int image_width, image_height, channels;" << "\n";
+	myfile << "unsigned char image_data[] = {" << "\n";
+	for (auto i = 0; i < images[0].size(); ++i) {
+		char hex_str[5] = { 0 };
+		sprintf_s(hex_str, "0x%02x", images[0][i]);
+		//myfile << int_to_hex(images[0][i]) << ", ";
+		myfile << hex_str << ", ";
+
+		if (!(i % 16)) {
+			myfile << "\n";
+		}
+	}
+	myfile << "};" << "\n";
+	myfile.close();
 
 	return true;
 }
