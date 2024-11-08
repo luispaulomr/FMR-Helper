@@ -79,7 +79,13 @@ private:
 
 	std::string _GetPathBinFile() const;
 
-	void TIMtoRGB(const std::vector<BYTE>& data,
+	size_t _GetBMPHeader(std::vector<BYTE>& header) const;
+
+	uint32_t _Get32bitColor(uint16_t clut) const;
+
+	uint32_t _CLUTColor32bit(const std::vector<uint8_t>& cluts, int index) const;
+
+	void _TIMtoBMP(const std::vector<BYTE>& data,
 				  const std::vector<BYTE>& clut,
 				  std::vector<BYTE>& RGB,
 				  size_t width,

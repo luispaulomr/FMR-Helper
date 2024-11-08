@@ -107,7 +107,7 @@ bool CModGame::_ReadBinFile
 	return true;
 }
 
-uint32_t Get32bitColor(uint16_t clut)
+uint32_t CModGame::_Get32bitColor(uint16_t clut) const
 {
 
 	uint32_t red = (clut & 0x001f) * 8;
@@ -129,53 +129,74 @@ uint32_t Get32bitColor(uint16_t clut)
 	return ret;
 }
 
-uint32_t CLUTColor32bit(const std::vector<uint8_t>& cluts, int index) {
+uint32_t CModGame::_CLUTColor32bit(const std::vector<uint8_t>& cluts, int index) const
+{
 
 	index *= 2;
 
 	uint16_t clut = static_cast<uint16_t>(cluts[index]) | (static_cast<uint16_t>(cluts[index + 1]) << 8);
 
-	uint32_t ret = Get32bitColor(clut);
-
-	return ret;
-
+	return _Get32bitColor(clut);
 }
 
-void CModGame::TIMtoRGB(const std::vector<BYTE>& data,
+size_t CModGame::_GetBMPHeader(std::vector<BYTE>& header) const
+{
+
+	size_t len_header = sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER);
+
+	BITMAPFILEHEADER bfh = { 0 };
+
+	// This value should be values of BM letters i.e 0x4D42  
+	// 0x4D = M 0×42 = B storing in reverse order to match with endian  
+	bfh.bfType = 0x4D42;
+	//bfh.bfType = 'B'+('M' << 8); 
+
+	// <<8 used to shift ‘M’ to end  */  
+
+	// Offset to the RGBQUAD  
+	bfh.bfOffBits = len_header;
+
+	// Total size of image including size of headers  
+	bfh.bfSize = headers_size + pixel_data_size;
+
+	return len_header;
+}
+
+void CModGame::_TIMtoBMP(const std::vector<BYTE>& data,
 						const std::vector<BYTE>& clut,
-						std::vector<BYTE>& RGB,
+						std::vector<BYTE>& image,
 						size_t width,
 						size_t height) const
 {
-	auto it_image = data.begin();
+	size_t len_data = 
+	size_t len_bmp_header;
+
+	image.resize(SMALL_IMAGE_WIDTH * SMALL_IMAGE_HEIGHT * SMALLIMAGE_BPP + len_bmp_header);
+
+	_GetBMPHeader(image);
+
+	auto it_image = data.begin() + len_bmp_header;
 
 	for (uint32_t i = 0; i < height; ++i) {
-
 		for (uint32_t j = 0; j < width; ++j) {
 
-			uint32_t pixel = CLUTColor32bit(clut, *it_image);
+			uint32_t pixel = _CLUTColor32bit(clut, *it_image);
 
 			uint32_t y = (height - 1 - i) * width;
 			uint32_t x = j;
 			uint32_t xy = (x + y) * 4;
 
-			if (x + y >= RGB.size()) {
+			if (x + y >= image.size()) {
 				continue;
 			}
 
-			RGB[xy + 3] = 0x00;
-			RGB[xy + 2] = (pixel >> 16) & 0xff;
-			RGB[xy + 1] = (pixel >> 8) & 0xff;
-			RGB[xy] = pixel & 0xff;
+			image[xy + 3] = 0x00;
+			image[xy + 2] = (pixel >> 16) & 0xff;
+			image[xy + 1] = (pixel >> 8) & 0xff;
+			image[xy] = pixel & 0xff;
 
 			++it_image;
-
-			if (it_image == data.end()) {
-				return;
-			}
-
 		}
-
 	}
 }
 
@@ -220,8 +241,6 @@ bool CModGame::_LoadSmallImages(std::vector<std::vector<BYTE>>& images,
 	std::vector<BYTE> image_clut(LEN_CLUT_SMALL_IMAGE);
 
 	for (auto i = 0; i < images.size(); ++i) {
-		images[i].resize(SMALL_IMAGE_WIDTH * SMALL_IMAGE_HEIGHT * SMALLIMAGE_BPP);
-
 		auto addr_to_read = buf.begin() + LEN_TOTAL_IMAGE * i + BIN_FILE_SMALL_IMAGES_INC;
 
 		std::copy(addr_to_read,
@@ -234,7 +253,7 @@ bool CModGame::_LoadSmallImages(std::vector<std::vector<BYTE>>& images,
 				  addr_to_read + image_clut.size(),
 				  image_clut.data());
 
-		TIMtoRGB(image_data, image_clut, images[i], SMALL_IMAGE_WIDTH, SMALL_IMAGE_HEIGHT);
+		_TIMtoBMP(image_data, image_clut, images[i], SMALL_IMAGE_WIDTH, SMALL_IMAGE_HEIGHT);
 	}
 
 	std::ofstream myfile;
