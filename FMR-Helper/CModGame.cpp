@@ -139,11 +139,18 @@ uint32_t CModGame::_CLUTColor32bit(const std::vector<uint8_t>& cluts, int index)
 	return _Get32bitColor(clut);
 }
 
-size_t CModGame::_GetBMPHeader(std::vector<BYTE>& header) const
+size_t CModGame::_GetBMPHeaderLen() const
 {
+	return (sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER));
+}
 
-	size_t len_header = sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER);
-
+void CModGame::_GetBMPHeader(std::vector<BYTE>& header,
+							 size_t width,
+							 size_t height,
+							 size_t bpp,
+						     size_t len_data,
+							 size_t len_header) const
+{
 	BITMAPFILEHEADER bfh = { 0 };
 
 	// This value should be values of BM letters i.e 0x4D42  
@@ -157,9 +164,47 @@ size_t CModGame::_GetBMPHeader(std::vector<BYTE>& header) const
 	bfh.bfOffBits = len_header;
 
 	// Total size of image including size of headers  
-	bfh.bfSize = headers_size + pixel_data_size;
+	bfh.bfSize = len_header + len_data;
 
-	return len_header;
+	BITMAPINFOHEADER bmpInfoHeader = { 0 };
+
+	// Set the size  
+	bmpInfoHeader.biSize = sizeof(bmpInfoHeader);
+
+	// Bit count  
+	bmpInfoHeader.biBitCount = bpp * 8;
+
+	// Use all colors  
+	bmpInfoHeader.biClrImportant = 0;
+
+	// Use as many colors according to bits per pixel  
+	bmpInfoHeader.biClrUsed = 0;
+
+	// Store as un Compressed  
+	bmpInfoHeader.biCompression = BI_RGB;
+
+	// Set the height in pixels  
+	bmpInfoHeader.biHeight = height;
+
+	// Width of the Image in pixels  
+	bmpInfoHeader.biWidth = width;
+
+	// Default number of planes  
+	bmpInfoHeader.biPlanes = 1;
+
+	// Calculate the image size in bytes  
+	bmpInfoHeader.biSizeImage = len_data;
+
+	bmpInfoHeader.biXPelsPerMeter = 0;
+
+	bmpInfoHeader.biYPelsPerMeter = 0;
+
+	bmpInfoHeader.biClrUsed = 0;
+
+	bmpInfoHeader.biClrImportant = 0;
+
+	::memcpy(header.data(), &bfh, sizeof(bfh));
+	::memcpy(header.data() + sizeof(bfh), &bmpInfoHeader, sizeof(bmpInfoHeader));
 }
 
 void CModGame::_TIMtoBMP(const std::vector<BYTE>& data,
@@ -168,34 +213,36 @@ void CModGame::_TIMtoBMP(const std::vector<BYTE>& data,
 						size_t width,
 						size_t height) const
 {
-	size_t len_data = 
-	size_t len_bmp_header;
+	
+	size_t len_header = _GetBMPHeaderLen();
+	size_t len_data = SMALL_IMAGE_WIDTH * SMALL_IMAGE_HEIGHT * SMALLIMAGE_BPP;
 
-	image.resize(SMALL_IMAGE_WIDTH * SMALL_IMAGE_HEIGHT * SMALLIMAGE_BPP + len_bmp_header);
+	image.resize(len_header + len_data);
 
-	_GetBMPHeader(image);
+	_GetBMPHeader(image, SMALL_IMAGE_WIDTH, SMALL_IMAGE_HEIGHT, SMALLIMAGE_BPP, len_data, len_header);
 
-	auto it_image = data.begin() + len_bmp_header;
+	auto it_data = data.begin();
+	auto p_image = image.data() + len_header;
 
 	for (uint32_t i = 0; i < height; ++i) {
 		for (uint32_t j = 0; j < width; ++j) {
 
-			uint32_t pixel = _CLUTColor32bit(clut, *it_image);
+			uint32_t pixel = _CLUTColor32bit(clut, *it_data);
 
 			uint32_t y = (height - 1 - i) * width;
 			uint32_t x = j;
 			uint32_t xy = (x + y) * 4;
 
-			if (x + y >= image.size()) {
-				continue;
-			}
+			//if (x + y >= image.size()) {
+			//	continue;
+			//}
 
-			image[xy + 3] = 0x00;
-			image[xy + 2] = (pixel >> 16) & 0xff;
-			image[xy + 1] = (pixel >> 8) & 0xff;
-			image[xy] = pixel & 0xff;
+			p_image[xy + 3] = 0x00;
+			p_image[xy + 2] = (pixel >> 16) & 0xff;
+			p_image[xy + 1] = (pixel >> 8) & 0xff;
+			p_image[xy] = pixel & 0xff;
 
-			++it_image;
+			++it_data;
 		}
 	}
 }
@@ -255,23 +302,6 @@ bool CModGame::_LoadSmallImages(std::vector<std::vector<BYTE>>& images,
 
 		_TIMtoBMP(image_data, image_clut, images[i], SMALL_IMAGE_WIDTH, SMALL_IMAGE_HEIGHT);
 	}
-
-	std::ofstream myfile;
-	myfile.open("C:\\Users\\lribeiro\\Desktop\\myimage.h");
-	myfile << "int image_width, image_height, channels;" << "\n";
-	myfile << "unsigned char image_data[] = {" << "\n";
-	for (auto i = 0; i < images[0].size(); ++i) {
-		char hex_str[5] = { 0 };
-		sprintf_s(hex_str, "0x%02x", images[0][i]);
-		//myfile << int_to_hex(images[0][i]) << ", ";
-		myfile << hex_str << ", ";
-
-		if (!(i % 16)) {
-			myfile << "\n";
-		}
-	}
-	myfile << "};" << "\n";
-	myfile.close();
 
 	return true;
 }
@@ -471,11 +501,6 @@ bool CModGame::IsDuel() const
 	return (_GetEnemyHealth() != 0);
 }
 
-//bool CModGame::_cmp_cards(const Card_t& a, const Card_t& b) const
-//{
-//	return (m_cards[a.card].atk > m_cards[b.card].atk);
-//}
-
 std::vector<Card_t> CModGame::GetMyFusions()
 {
 	auto table_cards = GetMyTableCards();
@@ -502,4 +527,9 @@ void CModGame::PrintMyFusions(const std::vector<Card_t>& fusions) const
 		std::cout << "(" << fusion.card << ")";
 		std::cout << "\n";
 	}
+}
+
+std::vector<BYTE> CModGame::GetSmallImage(size_t i) const
+{
+	return m_small_images[i];
 }

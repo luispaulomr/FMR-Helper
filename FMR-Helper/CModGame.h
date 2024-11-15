@@ -23,7 +23,7 @@ private:
 	const size_t BIN_FILE_SMALL_IMAGES_INC = 10304 + 672;
 	const size_t SMALL_IMAGE_WIDTH = 40;
 	const size_t SMALL_IMAGE_HEIGHT = 32;
-	const size_t SMALLIMAGE_BPP = 4;
+	const size_t SMALLIMAGE_BPP = 4;	/* bytes per pixel */
 	const size_t BIN_FILE_FUSIONS_OFFSET = 0x023e6608;
 	const size_t LEN_TOTAL_FUSIONS = 100000;
 	const size_t BIN_FILE_CARDS_OFFSET = 0x21598C;
@@ -79,7 +79,14 @@ private:
 
 	std::string _GetPathBinFile() const;
 
-	size_t _GetBMPHeader(std::vector<BYTE>& header) const;
+	void _GetBMPHeader(std::vector<BYTE>& header,
+					   size_t width,
+					   size_t height,
+					   size_t bpp,
+					   size_t len_data,
+					   size_t len_header) const;
+
+	size_t _GetBMPHeaderLen() const;
 
 	uint32_t _Get32bitColor(uint16_t clut) const;
 
@@ -108,6 +115,8 @@ public:
 	bool IsDuel() const;
 
 	std::vector<Card_t> GetMyFusions();
+
+	std::vector<BYTE> GetSmallImage(size_t) const;
 
 	void PrintMyFusions(const std::vector<Card_t>& fusions) const;
 
