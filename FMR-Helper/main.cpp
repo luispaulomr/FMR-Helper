@@ -107,14 +107,30 @@ static bool is_equal(const std::vector<Card_t>& fusions_1, const std::vector<Car
     return true;
 }
 
-static std::vector<Card_t> GetGameFusions(CModGame * p_ModGame)
+static void LoadSmallImageTextures(CModGame* p_ModGame,
+                                   std::vector<ID3D11ShaderResourceView*>& image_textures)
 {
+    if (image_textures.size()) {
+        return;
+    }
 
-    //std::vector<Card_t> prev_fusions;
+    image_textures.resize(722);
 
-    //while (true) {
+    auto small_images = p_ModGame->GetSmallImagesRef();
+
+    for (auto i = 0; i < 722; ++i) {
+        LoadTextureFromMemory((*small_images)[i].data(), (*small_images)[i].size(), &image_textures[i], &image_width, &image_height);
+    }
+}
+
+static std::vector<Card_t> GetGameFusions(CModGame * p_ModGame,
+                                          std::vector<ID3D11ShaderResourceView *>& image_textures)
+{
+    std::vector<Card_t> ret;
 
     if (p_ModGame->IsAttached()) {
+
+        LoadSmallImageTextures(p_ModGame, image_textures);
 
         //std::cout << "[MAIN] Game is running" << "\n";
 
@@ -132,8 +148,11 @@ static std::vector<Card_t> GetGameFusions(CModGame * p_ModGame)
     }
     else {
         std::cout << "[MAIN] Game is not running" << "\n";
+        image_textures.resize(0);
         p_ModGame->RetryAttach();
     }
+
+    return ret;
     //}
 }
 
@@ -181,7 +200,7 @@ static void ShowFusion(
     size_t image_width,
     size_t image_height,
     const Card_t& fusion,
-    ID3D11ShaderResourceView* texture)
+    const std::vector<ID3D11ShaderResourceView*>& textures)
 {
     float x = ImGui::GetCursorPosX();
     float y = ImGui::GetCursorPosY();
@@ -205,13 +224,13 @@ static void ShowFusion(
     y += 15.0;
     ImGui::SetCursorPos(ImVec2(curr_x, y));
 
-    ImGui::Image((ImTextureID)texture, ImVec2(image_width, image_height));
+    ImGui::Image((ImTextureID)textures[fusion.card], ImVec2(image_width, image_height));
     ImGui::SameLine();
     curr_x += image_width + 15.0;
     ImGui::SetCursorPos(ImVec2(curr_x, y));
 
     for (const auto& card : fusion.cards) {
-        ImGui::Image((ImTextureID)texture, ImVec2(image_width, image_height));
+        ImGui::Image((ImTextureID)textures[card], ImVec2(image_width, image_height));
         ImGui::SameLine();
         curr_x += image_width + 5.0;
         ImGui::SetCursorPos(ImVec2(curr_x, y));
@@ -240,7 +259,7 @@ static void ShowFusionsWindow(
     size_t image_width,
     size_t image_height,
     const std::vector<Card_t>& fusions,
-    ID3D11ShaderResourceView* texture)
+    const std::vector<ID3D11ShaderResourceView *>& textures)
 {
     size_t num_fusions = fusions.size();
 
@@ -267,7 +286,7 @@ static void ShowFusionsWindow(
     if (ImGui::Begin("Fusions", p_open, window_flags))
     {
         for (const auto& fusion : fusions) {
-            ShowFusion(image_width, image_height, fusion, texture);
+            ShowFusion(image_width, image_height, fusion, textures);
         }
     }
     ImGui::End();
@@ -332,10 +351,8 @@ int main(int, char**)
     bool show_another_window = false;
     ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
-    ID3D11ShaderResourceView* myTexture = nullptr;
-    LoadTextureFromMemory(image_data_4, sizeof(image_data_4), &myTexture, &image_width, &image_height);
-
     std::unique_ptr<CModGame> p_ModGame = std::unique_ptr<CModGame>(new CModGame(L"ePSXe - Enhanced PSX Emulator", L"ePSXe.exe"));
+    std::vector<ID3D11ShaderResourceView*> image_textures;
 
     // Main loop
     bool done = false;
@@ -387,9 +404,13 @@ int main(int, char**)
         ++i_counter;
 
         if (!(i_counter % 10)) {
-            fusions = GetGameFusions(p_ModGame.get());
+            fusions = GetGameFusions(p_ModGame.get(), image_textures);
+            i_counter = 0;
         }
-        ShowFusionsWindow(&window_data.ShowFusions, image_width, image_height, fusions, myTexture);
+
+        if (image_textures.size()) {
+            ShowFusionsWindow(&window_data.ShowFusions, image_width, image_height, fusions, image_textures);
+        }
 
         //SetWindowsPos(hnwd, );
 

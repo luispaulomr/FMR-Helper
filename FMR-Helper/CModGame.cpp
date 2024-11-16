@@ -529,7 +529,7 @@ void CModGame::PrintMyFusions(const std::vector<Card_t>& fusions) const
 	}
 }
 
-std::vector<BYTE> CModGame::GetSmallImage(size_t i) const
+const std::vector<std::vector<BYTE>> * CModGame::GetSmallImagesRef() const
 {
-	return m_small_images[i];
+	return &m_small_images;
 }

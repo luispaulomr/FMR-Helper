@@ -116,7 +116,7 @@ public:
 
 	std::vector<Card_t> GetMyFusions();
 
-	std::vector<BYTE> GetSmallImage(size_t) const;
+	const std::vector<std::vector<BYTE>>* GetSmallImagesRef() const;
 
 	void PrintMyFusions(const std::vector<Card_t>& fusions) const;
 
