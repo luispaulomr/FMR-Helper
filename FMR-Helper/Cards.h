@@ -12,8 +12,13 @@ typedef struct Card {
 
     /* actual card */
 
-    uint16_t card;
+    uint16_t card = 0;
 } Card_t;
+
+typedef struct CardData {
+    uint16_t atk = 0;
+    uint16_t def = 0;
+} CardData_t;
 
 std::vector<Card_t> GetFusions(
     std::vector<uint16_t>& table_cards,

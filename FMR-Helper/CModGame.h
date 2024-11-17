@@ -11,24 +11,24 @@ class CModGame {
 
 private:
 
-	const size_t MAX_CARDS = 722;
-	const size_t MAX_HAND_CARDS = 5;
-	const size_t LEN_DATA_SMALL_IMAGE = 40 * 32;
-	const size_t LEN_CLUT_SMALL_IMAGE = 512;
-	const size_t LEN_TOTAL_SMALL_IMAGE = LEN_DATA_SMALL_IMAGE + LEN_CLUT_SMALL_IMAGE;
-	const size_t LEN_TOTAL_IMAGE = 14336;
-	const size_t LEN_TOTAL_IMAGES = 25000000;
-	const size_t BIN_FILE_IMAGES_OFFSET = 0x1847598;
-	const size_t BIN_FILE_SMALL_IMAGES_OFFSET = 0x16a8c38;
-	const size_t BIN_FILE_SMALL_IMAGES_INC = 10304 + 672;
-	const size_t SMALL_IMAGE_WIDTH = 40;
-	const size_t SMALL_IMAGE_HEIGHT = 32;
-	const size_t SMALLIMAGE_BPP = 4;	/* bytes per pixel */
-	const size_t BIN_FILE_FUSIONS_OFFSET = 0x023e6608;
-	const size_t LEN_TOTAL_FUSIONS = 100000;
-	const size_t BIN_FILE_CARDS_OFFSET = 0x21598C;
-	const size_t BIN_FILE_CARDS_OFFSET_2 = 0x216078;
-	const size_t BIN_FILE_CARDS_INC = 4;
+	const uint32_t MAX_CARDS = 722;
+	const uint32_t MAX_HAND_CARDS = 5;
+	const uint32_t LEN_DATA_SMALL_IMAGE = 40 * 32;
+	const uint32_t LEN_CLUT_SMALL_IMAGE = 512;
+	const uint32_t LEN_TOTAL_SMALL_IMAGE = LEN_DATA_SMALL_IMAGE + LEN_CLUT_SMALL_IMAGE;
+	const uint32_t LEN_TOTAL_IMAGE = 14336;
+	const uint32_t LEN_TOTAL_IMAGES = 25000000;
+	const uint32_t BIN_FILE_IMAGES_OFFSET = 0x1847598;
+	const uint32_t BIN_FILE_SMALL_IMAGES_OFFSET = 0x16a8c38;
+	const uint32_t BIN_FILE_SMALL_IMAGES_INC = 10304 + 672;
+	const uint32_t SMALL_IMAGE_WIDTH = 40;
+	const uint32_t SMALL_IMAGE_HEIGHT = 32;
+	const uint32_t SMALLIMAGE_BPP = 4;	/* bytes per pixel */
+	const uint32_t BIN_FILE_FUSIONS_OFFSET = 0x023e6608;
+	const uint32_t LEN_TOTAL_FUSIONS = 100000;
+	const uint32_t BIN_FILE_CARDS_OFFSET = 0x21598C;
+	const uint32_t BIN_FILE_CARDS_OFFSET_2 = 0x216078;
+	const uint32_t BIN_FILE_CARDS_INC = 4;
 
 	enum ADDR_OFFSET_INDEXES {
 		I_ENEMY_HEALTH = 0,
@@ -40,7 +40,7 @@ private:
 
 	typedef struct GameConsts {
 		uintptr_t offset;
-		size_t len;
+		uint32_t len;
 	} GameConsts_t;
 
 	const GameConsts_t GAME_CONSTS[MAX_ADDR_OFFSET_INDEX] = {
@@ -49,11 +49,6 @@ private:
 		{0xa82020 + 0x1a7b70,	124},	/* MY_TABLE_CARDS */
 		{0x36f100,				255},	/* PATH_BIN_FILE */
 	};
-
-	typedef struct CardData {
-		uint16_t atk;
-		uint16_t def;
-	} CardData_t;
 
 	std::unique_ptr<CHandleProcess> m_pHandleProcess;
 	std::vector<std::vector<BYTE>> m_small_images;
@@ -67,7 +62,7 @@ private:
 
 	std::vector<BYTE> _ReadData(GameConsts_t) const;
 
-	bool _ReadBinFile(std::string path_file, size_t offset, size_t len, std::vector<BYTE>& buf) const;
+	bool _ReadBinFile(std::string path_file, uint32_t offset, uint32_t len, std::vector<BYTE>& buf) const;
 
 	bool _LoadSmallImages(std::vector<std::vector<BYTE>>&, const std::vector<std::vector<Card_t>>&) const;
 
@@ -80,13 +75,13 @@ private:
 	std::string _GetPathBinFile() const;
 
 	void _GetBMPHeader(std::vector<BYTE>& header,
-					   size_t width,
-					   size_t height,
-					   size_t bpp,
-					   size_t len_data,
-					   size_t len_header) const;
+					   uint32_t width,
+					   uint32_t height,
+					   uint32_t bpp,
+					   uint32_t len_data,
+					   uint32_t len_header) const;
 
-	size_t _GetBMPHeaderLen() const;
+	uint32_t _GetBMPHeaderLen() const;
 
 	uint32_t _Get32bitColor(uint16_t clut) const;
 
@@ -95,14 +90,12 @@ private:
 	void _TIMtoBMP(const std::vector<BYTE>& data,
 				  const std::vector<BYTE>& clut,
 				  std::vector<BYTE>& RGB,
-				  size_t width,
-			      size_t height) const;
-
-	//bool _cmp_cards(Card_t a, Card_t b) const;
+				  uint32_t width,
+			      uint32_t height) const;
 
 public:
 
-	CModGame(const std::wstring& str_window_name, const std::wstring& str_exe_name);
+	void Attach(const std::wstring& str_window_name, const std::wstring& str_exe_name);
 
 	bool RetryAttach();
 
@@ -117,6 +110,8 @@ public:
 	std::vector<Card_t> GetMyFusions();
 
 	const std::vector<std::vector<BYTE>>* GetSmallImagesRef() const;
+
+	const std::vector<CardData_t>* GetCardDataRef() const;
 
 	void PrintMyFusions(const std::vector<Card_t>& fusions) const;
 

@@ -17,7 +17,6 @@
 #include "imgui_impl_dx11.h"
 #include <d3d11.h>
 #include <tchar.h>
-#include "myimage.h"
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 #include <vector>
@@ -38,7 +37,29 @@ void CreateRenderTarget();
 void CleanupRenderTarget();
 LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
-static bool LoadTextureFromMemory(const void* data, size_t data_size, ID3D11ShaderResourceView** out_srv, int* out_width, int* out_height)
+typedef struct WindowData {
+    bool ShowFusions = true;
+    bool ShowConsole = true;
+
+    uint32_t ImageWidth = 0;
+    uint32_t ImageHeight = 0;
+
+    /* GetFusions counter */
+
+    uint32_t CounterExecute = 0;
+    uint32_t CounterExecuteMax = 20;
+
+    /* Our game attach/read class */
+
+    CModGame ModGame;
+
+    /* Loaded after ModGame attach */
+
+    std::vector<Card_t> Fusions;
+    std::vector<ID3D11ShaderResourceView*> ImageTextures;
+} WindowData_t;
+
+static bool LoadTextureFromMemory(const void* data, size_t data_size, ID3D11ShaderResourceView** out_srv, uint32_t* out_width, uint32_t* out_height)
 {
     // Load from disk into a raw RGBA buffer
     int image_width = 0;
@@ -84,123 +105,47 @@ static bool LoadTextureFromMemory(const void* data, size_t data_size, ID3D11Shad
     return true;
 }
 
-static bool is_equal(const std::vector<Card_t>& fusions_1, const std::vector<Card_t>& fusions_2)
+static void LoadSmallImageTextures(WindowData_t& wd)
 {
-    if (fusions_1.size() != fusions_2.size()) {
-        return false;
-    }
-
-    for (auto i = 0; i < fusions_1.size(); ++i) {
-        if (fusions_1[i].card != fusions_2[i].card) {
-            return false;
-        }
-
-        if (fusions_1[i].cards != fusions_2[i].cards) {
-            return false;
-        }
-
-        if (fusions_1[i].uid_cards != fusions_2[i].uid_cards) {
-            return false;
-        }
-    }
-
-    return true;
-}
-
-static void LoadSmallImageTextures(CModGame* p_ModGame,
-                                   std::vector<ID3D11ShaderResourceView*>& image_textures)
-{
-    if (image_textures.size()) {
+    if (wd.ImageTextures.size()) {
         return;
     }
 
-    image_textures.resize(722);
+    wd.ImageTextures.resize(722);
 
-    auto small_images = p_ModGame->GetSmallImagesRef();
+    auto small_images = wd.ModGame.GetSmallImagesRef();
 
     for (auto i = 0; i < 722; ++i) {
-        LoadTextureFromMemory((*small_images)[i].data(), (*small_images)[i].size(), &image_textures[i], &image_width, &image_height);
+        LoadTextureFromMemory((*small_images)[i].data(), (*small_images)[i].size(), &wd.ImageTextures[i], &wd.ImageWidth, &wd.ImageHeight);
     }
 }
 
-static std::vector<Card_t> GetGameFusions(CModGame * p_ModGame,
-                                          std::vector<ID3D11ShaderResourceView *>& image_textures)
+static std::vector<Card_t> GetGameFusions(WindowData_t& wd)
 {
     std::vector<Card_t> ret;
 
-    if (p_ModGame->IsAttached()) {
+    if (wd.ModGame.IsAttached()) {
 
-        LoadSmallImageTextures(p_ModGame, image_textures);
+        LoadSmallImageTextures(wd);
 
         //std::cout << "[MAIN] Game is running" << "\n";
 
-        if (p_ModGame->IsDuel()) {
+        if (wd.ModGame.IsDuel()) {
             //std::cout << "[MAIN] Duel has started" << "\n";
 
-            return p_ModGame->GetMyFusions();
-
-            //if (!is_equal(prev_fusions, curr_fusions)) {
-            //	std::cout << "[MAIN] Fusions:" << "\n";
-            //	p_ModGame->PrintMyFusions(curr_fusions);
-            //	prev_fusions = curr_fusions;
-            //}
+            return wd.ModGame.GetMyFusions();
         }
     }
     else {
         std::cout << "[MAIN] Game is not running" << "\n";
-        image_textures.resize(0);
-        p_ModGame->RetryAttach();
-    }
-
-    return ret;
-    //}
-}
-
-static std::vector<Card_t> TestFusions()
-{
-    std::vector<Card_t> ret;
-
-    {
-        Card_t card;
-        card.cards.push_back(100);
-        card.cards.push_back(101);
-        card.uid_cards.push_back(0);
-        card.uid_cards.push_back(1);
-        ret.push_back(card);
-    }
-
-    {
-        Card_t card;
-        card.cards.push_back(100);
-        card.cards.push_back(101);
-        card.cards.push_back(102);
-        card.uid_cards.push_back(0);
-        card.uid_cards.push_back(1);
-        card.uid_cards.push_back(2);
-        ret.push_back(card);
-    }
-
-    {
-        Card_t card;
-        card.cards.push_back(100);
-        card.cards.push_back(101);
-        card.cards.push_back(102);
-        card.cards.push_back(103);
-        card.uid_cards.push_back(0);
-        card.uid_cards.push_back(1);
-        card.uid_cards.push_back(2);
-        card.uid_cards.push_back(3);
-        ret.push_back(card);
+        wd.ImageTextures.resize(0);
+        wd.ModGame.RetryAttach();
     }
 
     return ret;
 }
 
-static void ShowFusion(
-    size_t image_width,
-    size_t image_height,
-    const Card_t& fusion,
-    const std::vector<ID3D11ShaderResourceView*>& textures)
+static void ShowFusion(const WindowData_t& wd, const Card_t& fusion)
 {
     float x = ImGui::GetCursorPosX();
     float y = ImGui::GetCursorPosY();
@@ -209,62 +154,60 @@ static void ShowFusion(
 
     ImGui::Text("Result");
     ImGui::SameLine();
-    curr_x += image_width + 15.0;
+    curr_x += wd.ImageWidth + (float) 15.0;
     ImGui::SetCursorPosX(curr_x);
     size_t i = 1;
     for (const auto& card : fusion.cards) {
         ImGui::Text(std::to_string(i).c_str());
         ImGui::SameLine();
-        curr_x += image_width + 5.0;
+        curr_x += wd.ImageWidth + (float) 5.0;
         ImGui::SetCursorPosX(curr_x);
         ++i;
     }
 
     curr_x = x;
-    y += 15.0;
+    y += (float) 15.0;
     ImGui::SetCursorPos(ImVec2(curr_x, y));
 
-    ImGui::Image((ImTextureID)textures[fusion.card], ImVec2(image_width, image_height));
+    ImGui::Image((ImTextureID)wd.ImageTextures[fusion.card], ImVec2((float) wd.ImageWidth, (float) wd.ImageHeight));
     ImGui::SameLine();
-    curr_x += image_width + 15.0;
+    curr_x += wd.ImageWidth + (float) 15.0;
     ImGui::SetCursorPos(ImVec2(curr_x, y));
 
     for (const auto& card : fusion.cards) {
-        ImGui::Image((ImTextureID)textures[card], ImVec2(image_width, image_height));
+        ImGui::Image((ImTextureID)wd.ImageTextures[card], ImVec2((float) wd.ImageWidth, (float) wd.ImageHeight));
         ImGui::SameLine();
-        curr_x += image_width + 5.0;
+        curr_x += wd.ImageWidth + (float) 5.0;
         ImGui::SetCursorPos(ImVec2(curr_x, y));
     }
 
+    auto p_cards = wd.ModGame.GetCardDataRef();
+    CardData_t card = (*p_cards)[fusion.card];
+
     curr_x = x;
-    y += image_height + 5.0;
+    y += wd.ImageHeight + (float) 5.0;
     ImGui::SetCursorPos(ImVec2(curr_x, y));
 
     ImGui::Text("ATK: ");
+    curr_x = x + (float) 30.0;
+    ImGui::SetCursorPos(ImVec2(curr_x, y));
+    ImGui::Text(std::to_string(card.atk).c_str());
     ImGui::Text("DEF: ");
+    ImGui::SameLine();
+    ImGui::SetCursorPosX(curr_x);
+    ImGui::Text(std::to_string(card.def).c_str());
 
-    y += 40.0;
+    y += (float) 40.0;
     ImGui::SetCursorPosY(y);
     ImGui::Separator();
 }
 
-struct ImGuiWindowData {
-    bool ShowFusions = true;
-};
-
-static ImGuiWindowData window_data;
-
-static void ShowFusionsWindow(
-    bool* p_open,
-    size_t image_width,
-    size_t image_height,
-    const std::vector<Card_t>& fusions,
-    const std::vector<ID3D11ShaderResourceView *>& textures)
+static void ShowFusionsWindow(WindowData_t& wd)
 {
-    size_t num_fusions = fusions.size();
+    size_t num_fusions = wd.Fusions.size();
 
     size_t max_cards = 0;
-    for (const auto& fusion : fusions) {
+    for (const auto& fusion : wd.Fusions) {
         if (fusion.cards.size() > max_cards) {
             max_cards = fusion.cards.size();
         }
@@ -283,10 +226,10 @@ static void ShowFusionsWindow(
     window_size = ImVec2(500.0, 500.0);
     ImGui::SetNextWindowSize(window_size, ImGuiCond_Always);
 
-    if (ImGui::Begin("Fusions", p_open, window_flags))
+    if (ImGui::Begin("Fusions", &wd.ShowFusions, window_flags))
     {
-        for (const auto& fusion : fusions) {
-            ShowFusion(image_width, image_height, fusion, textures);
+        for (const auto& fusion : wd.Fusions) {
+            ShowFusion(wd, fusion);
         }
     }
     ImGui::End();
@@ -299,7 +242,7 @@ int main(int, char**)
     //ImGui_ImplWin32_EnableDpiAwareness();
     WNDCLASSEXW wc = { sizeof(wc), CS_CLASSDC, WndProc, 0L, 0L, GetModuleHandle(nullptr), nullptr, nullptr, nullptr, nullptr, L"ImGui Example", nullptr };
     ::RegisterClassExW(&wc);
-    HWND hwnd = ::CreateWindowW(wc.lpszClassName, L"FMR-Helper", WS_OVERLAPPEDWINDOW, 0, 0, 500, 500, nullptr, nullptr, wc.hInstance, nullptr);
+    HWND hwnd = ::CreateWindowW(wc.lpszClassName, L"FMR-Helper", WS_OVERLAPPEDWINDOW, 0, 0, 1000, 700, nullptr, nullptr, wc.hInstance, nullptr);
     //HWND hwnd = ::CreateWindowEx(WS_EX_LAYERED | WS_EX_TOPMOST | WS_EX_NOACTIVATE, _T("Imgui Example"), NULL, WS_POPUP, 0, 0, 1920, 1080, NULL, NULL, wc.hInstance, NULL);
     //HWND hwnd = ::CreateWindowEx(WS_EX_LAYERED | WS_EX_TOPMOST | WS_EX_NOACTIVATE, _T("Imgui Example"), NULL, WS_POPUP, 0, 0, 1920, 1080, NULL, NULL, wc.hInstance, NULL);
     //SetLayeredWindowAttributes(hwnd, RGB(0, 0, 0), 0, ULW_COLORKEY);
@@ -347,12 +290,10 @@ int main(int, char**)
     //IM_ASSERT(font != nullptr);
 
     // Our state
-    bool show_demo_window = true;
-    bool show_another_window = false;
     ImVec4 clear_color = ImVec4(0.45f, 0.55f, 0.60f, 1.00f);
 
-    std::unique_ptr<CModGame> p_ModGame = std::unique_ptr<CModGame>(new CModGame(L"ePSXe - Enhanced PSX Emulator", L"ePSXe.exe"));
-    std::vector<ID3D11ShaderResourceView*> image_textures;
+    WindowData_t wd;
+    wd.ModGame.Attach(L"ePSXe - Enhanced PSX Emulator", L"ePSXe.exe");
 
     // Main loop
     bool done = false;
@@ -395,132 +336,16 @@ int main(int, char**)
 
         /* Our GUI */
 
-        //ImGui::ShowDemoWindow();
+        ++wd.CounterExecute;
 
-        //auto fusions = TestFusions();
-        static std::vector<Card_t> fusions;
-        static size_t i_counter = 0;
-
-        ++i_counter;
-
-        if (!(i_counter % 10)) {
-            fusions = GetGameFusions(p_ModGame.get(), image_textures);
-            i_counter = 0;
+        if (wd.CounterExecute == wd.CounterExecuteMax) {
+            wd.Fusions = GetGameFusions(wd);
+            wd.CounterExecute = 0;
         }
 
-        if (image_textures.size()) {
-            ShowFusionsWindow(&window_data.ShowFusions, image_width, image_height, fusions, image_textures);
+        if (wd.ImageTextures.size()) {
+            ShowFusionsWindow(wd);
         }
-
-        //SetWindowsPos(hnwd, );
-
-        //ImGui::SetCursorPos(ImGui::GetCursorStartPos());
-        //auto x = ImGui::GetCursorPosX();
-        //auto y = ImGui::GetCursorPosY();
-
-        //auto curr_x = x;
-        //auto curr_y = y;
-
-        //ImGui::SetWindowSize(ImVec2(max_cards * (image_width + 5) + image_width + 15.0,
-        //    num_fusions * (image_height + 65.0)));
-        //{
-        //    ImGui::Begin("Fusions", NULL, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove);
-
-        //    for (const auto& fusion : fusions) {
-
-        //        ImGui::Text("Result");
-        //        curr_x += image_width + 15.0;
-        //        ImGui::SetCursorPos(ImVec2(curr_x, curr_y));
-        //        size_t i = 1;
-        //        for (const auto& card : fusion.cards) {
-        //            ImGui::Text(std::to_string(i).c_str());
-        //            curr_x += image_width + 5.0;
-        //            ImGui::SetCursorPos(ImVec2(curr_x, curr_y));
-        //            ++i;
-        //        }
-
-        //        curr_y += 15.0;
-        //        curr_x = x;
-
-        //        ImGui::SetCursorPos(ImVec2(curr_x, curr_y));
-        //        ImGui::Image((ImTextureID)myTexture, ImVec2(image_width, image_height));
-        //        curr_x += image_width + 15.0;
-        //        ImGui::SetCursorPos(ImVec2(curr_x, curr_y));
-
-        //        for (const auto& card : fusion.cards) {
-        //            ImGui::SetCursorPos(ImVec2(curr_x, curr_y));
-        //            ImGui::Image((ImTextureID)myTexture, ImVec2(image_width, image_height));
-        //            curr_x += image_width + 5.0;
-        //            ImGui::SetCursorPos(ImVec2(curr_x, curr_y));
-        //        }
-
-        //        curr_y += image_height + 5.0;
-        //        curr_x = x;
-
-        //        ImGui::SetCursorPos(ImVec2(curr_x, curr_y));
-        //        ImGui::Text("ATK: ");
-        //        ImGui::Text("DEF: ");
-
-        //        curr_y += 45.0;
-        //        curr_x = x;
-
-        //        ImGui::SetCursorPos(ImVec2(curr_x, curr_y));
-        //    }
-        //    ImGui::End();
-        //}
-
-        //auto xy = ImGui::GetCursorStartPos();
-        //auto x = xy.x;
-        //auto y = xy.y;
-
-        //auto curr_x = x;
-        //auto curr_y = y;
-
-        //    for (const auto& fusion : fusions) {
-        //        size_t i = 0;
-        //        //ImGui::SetNextWindowSize(ImVec2(max_cards* (image_width + 5) + image_width + 15.0,
-        //        //    num_fusions* (image_height + 65.0)));
-        //        ImGui::SetNextWindowPos(ImVec2(curr_x, curr_y));
-        //        ImGui::SetNextWindowSize(ImVec2(100.0, 100.0));
-        //        {
-        //            std::string str = "Fusion ";
-        //            str += std::to_string(i);
-        //            ++i;
-        //            ImGui::Begin(str.c_str(), NULL, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove);
-
-        //            //ImGui::SetCursorPos(ImGui::GetCursorStartPos());
-        //            //ShowFusion(curr_x, curr_y, image_width, image_height, fusions[0], myTexture);
-        //            curr_y += 50.0;
-        //            curr_x = x;
-        //            //ImGui::SetCursorPos(ImVec2(curr_x, curr_y));
-
-        //            ImGui::End();
-        //        }
-        //    }
-
-                //ImGui::SetNextWindowPos(ImVec2(0.0, 100.0));
-                //ImGui::SetNextWindowSize(ImVec2(100.0, 100.0));
-                //{
-                //    ImGui::Begin("LUL", NULL, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove);
-                //    auto curr_x = x;
-                //    auto curr_y = y;
-                //    //ImGui::SetCursorPos(ImGui::GetCursorStartPos());
-                //    //ShowFusion(curr_x, curr_y, image_width, image_height, fusions[0], myTexture);
-                //    curr_y += 50.0;
-                //    curr_x = x;
-                //    //ImGui::SetCursorPos(ImVec2(curr_x, curr_y));
-
-                //    ImGui::End();
-                //}
-
-        //for (const auto& fusion : fusions) {
-        //    ImGui::Begin("Fusion", NULL, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoMove);
-        //    ShowFusion(curr_x, curr_y, image_width, image_height, fusions[0], myTexture);
-        //    curr_y += 15.0;
-        //    curr_x = x;
-        //    ImGui::SetCursorPos(ImVec2(curr_x, curr_y));
-        //    ImGui::End();
-        //}
 
         // Rendering
         ImGui::Render();

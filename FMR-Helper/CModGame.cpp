@@ -6,7 +6,7 @@
 #include <algorithm>
 #include "Cards.h"
 
-CModGame::CModGame(const std::wstring& str_window_name, const std::wstring& str_exe_name)
+void CModGame::Attach(const std::wstring& str_window_name, const std::wstring& str_exe_name)
 {
 	auto handle_process = std::make_unique<CHandleProcess>(str_window_name, str_exe_name);
 
@@ -74,8 +74,8 @@ uint16_t CModGame::_GetEnemyHealth() const
 bool CModGame::_ReadBinFile
 	(
 	std::string path_file,
-	size_t offset,
-	size_t len,
+	uint32_t offset,
+	uint32_t len,
 	std::vector<BYTE>& buf
 	) const
 {
@@ -139,17 +139,17 @@ uint32_t CModGame::_CLUTColor32bit(const std::vector<uint8_t>& cluts, int index)
 	return _Get32bitColor(clut);
 }
 
-size_t CModGame::_GetBMPHeaderLen() const
+uint32_t CModGame::_GetBMPHeaderLen() const
 {
 	return (sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER));
 }
 
 void CModGame::_GetBMPHeader(std::vector<BYTE>& header,
-							 size_t width,
-							 size_t height,
-							 size_t bpp,
-						     size_t len_data,
-							 size_t len_header) const
+							 uint32_t width,
+							 uint32_t height,
+							 uint32_t bpp,
+						     uint32_t len_data,
+							 uint32_t len_header) const
 {
 	BITMAPFILEHEADER bfh = { 0 };
 
@@ -161,10 +161,10 @@ void CModGame::_GetBMPHeader(std::vector<BYTE>& header,
 	// <<8 used to shift ‘M’ to end  */  
 
 	// Offset to the RGBQUAD  
-	bfh.bfOffBits = len_header;
+	bfh.bfOffBits = (DWORD) len_header;
 
 	// Total size of image including size of headers  
-	bfh.bfSize = len_header + len_data;
+	bfh.bfSize = (DWORD) (len_header + len_data);
 
 	BITMAPINFOHEADER bmpInfoHeader = { 0 };
 
@@ -172,7 +172,7 @@ void CModGame::_GetBMPHeader(std::vector<BYTE>& header,
 	bmpInfoHeader.biSize = sizeof(bmpInfoHeader);
 
 	// Bit count  
-	bmpInfoHeader.biBitCount = bpp * 8;
+	bmpInfoHeader.biBitCount = (WORD) (bpp * 8);
 
 	// Use all colors  
 	bmpInfoHeader.biClrImportant = 0;
@@ -184,16 +184,16 @@ void CModGame::_GetBMPHeader(std::vector<BYTE>& header,
 	bmpInfoHeader.biCompression = BI_RGB;
 
 	// Set the height in pixels  
-	bmpInfoHeader.biHeight = height;
+	bmpInfoHeader.biHeight = (LONG) height;
 
 	// Width of the Image in pixels  
-	bmpInfoHeader.biWidth = width;
+	bmpInfoHeader.biWidth = (LONG) width;
 
 	// Default number of planes  
 	bmpInfoHeader.biPlanes = 1;
 
 	// Calculate the image size in bytes  
-	bmpInfoHeader.biSizeImage = len_data;
+	bmpInfoHeader.biSizeImage = (DWORD) len_data;
 
 	bmpInfoHeader.biXPelsPerMeter = 0;
 
@@ -210,12 +210,12 @@ void CModGame::_GetBMPHeader(std::vector<BYTE>& header,
 void CModGame::_TIMtoBMP(const std::vector<BYTE>& data,
 						const std::vector<BYTE>& clut,
 						std::vector<BYTE>& image,
-						size_t width,
-						size_t height) const
+						uint32_t width,
+						uint32_t height) const
 {
 	
-	size_t len_header = _GetBMPHeaderLen();
-	size_t len_data = SMALL_IMAGE_WIDTH * SMALL_IMAGE_HEIGHT * SMALLIMAGE_BPP;
+	uint32_t len_header = _GetBMPHeaderLen();
+	uint32_t len_data = SMALL_IMAGE_WIDTH * SMALL_IMAGE_HEIGHT * SMALLIMAGE_BPP;
 
 	image.resize(len_header + len_data);
 
@@ -262,7 +262,7 @@ bool CModGame::_LoadSmallImages(std::vector<std::vector<BYTE>>& images,
 							    const std::vector<std::vector<Card_t>>& fusions) const
 {
 	images.resize(MAX_CARDS);
-	size_t len_to_read = LEN_TOTAL_IMAGES;
+	uint32_t len_to_read = LEN_TOTAL_IMAGES;
 
 	std::vector<BYTE> tmp(len_to_read);
 
@@ -274,11 +274,11 @@ bool CModGame::_LoadSmallImages(std::vector<std::vector<BYTE>>& images,
 
 	/* totally empirical data */
 
-	size_t len_data = 2048;
-	size_t num_data = 5054;
+	uint32_t len_data = 2048;
+	uint32_t num_data = 5054;
 	std::vector<BYTE> buf(len_data * num_data);
 
-	for (auto i = 0; i < num_data; ++i) {
+	for (unsigned i = 0; i < num_data; ++i) {
 		auto offset = i * len_data;
 		auto skip = i * 304;
 		std::memcpy(buf.data() + offset, tmp.data() + offset + skip, len_data);
@@ -309,7 +309,7 @@ bool CModGame::_LoadSmallImages(std::vector<std::vector<BYTE>>& images,
 bool CModGame::_LoadFusions(std::vector<std::vector<Card_t>>& fusions) const
 {
 	fusions.resize(MAX_CARDS);
-	size_t len_to_read = LEN_TOTAL_FUSIONS;
+	uint32_t len_to_read = LEN_TOTAL_FUSIONS;
 	std::vector<BYTE> tmp(len_to_read);
 
 	if (!_ReadBinFile(m_path_bin_file, BIN_FILE_FUSIONS_OFFSET, len_to_read, tmp)) {
@@ -320,11 +320,11 @@ bool CModGame::_LoadFusions(std::vector<std::vector<Card_t>>& fusions) const
 
 	/* totally empirical data */
 
-	size_t len_data = 2048;
-	size_t num_data = 32;
+	uint32_t len_data = 2048;
+	uint32_t num_data = 32;
 	std::vector<BYTE> buf(len_data * num_data);
 
-	for (auto i = 0; i < num_data; ++i) {
+	for (unsigned i = 0; i < num_data; ++i) {
 		auto offset = i * len_data;
 		auto skip = i * 304;
 		std::memcpy(buf.data() + offset, tmp.data() + offset + skip, len_data);
@@ -397,7 +397,7 @@ bool CModGame::_LoadFusions(std::vector<std::vector<Card_t>>& fusions) const
 bool CModGame::_LoadCards(std::vector<CardData_t>& cards) const
 {
 	cards.resize(MAX_CARDS);
-	size_t len_to_read = 10000;
+	uint32_t len_to_read = 10000;
 	std::vector<BYTE> buf(len_to_read);
 
 	if (!_ReadBinFile(m_path_bin_file, BIN_FILE_CARDS_OFFSET, len_to_read, buf)) {
@@ -408,7 +408,7 @@ bool CModGame::_LoadCards(std::vector<CardData_t>& cards) const
 
 	for (auto i = 0; i < cards.size(); ++i) {
 		uint32_t num = 0;
-		size_t inc = 0;
+		uint32_t inc = 0;
 
 		/* totally empirical data */
 		if (i > 366) {
@@ -421,6 +421,8 @@ bool CModGame::_LoadCards(std::vector<CardData_t>& cards) const
 		cards[i].atk = (num & 0x1ff) * 10;
 		cards[i].def = ((num >> 9) & 0x1ff) * 10;
 	}
+
+	return true;
 }
 
 bool CModGame::_LoadGameData()
@@ -452,6 +454,8 @@ bool CModGame::_LoadGameData()
 		std::cout << "[CModGame::LoadGameData] ERROR: Could not load cards from binary file." << "\n";
 		return false;
 	}
+
+	return true;
 }
 
 std::vector<uint16_t> CModGame::GetMyHandCards() const
@@ -475,7 +479,7 @@ std::vector<uint16_t> CModGame::GetMyTableCards() const
 
 	auto mem = _ReadData(GAME_CONSTS[I_MY_TABLE_CARDS]);
 
-	for (int i = 0; i < MAX_HAND_CARDS; ++i) {
+	for (unsigned i = 0; i < MAX_HAND_CARDS; ++i) {
 		uint16_t card = 0;
 		std::memcpy(&card, mem.data() + 28 * i, 2);
 
@@ -532,4 +536,9 @@ void CModGame::PrintMyFusions(const std::vector<Card_t>& fusions) const
 const std::vector<std::vector<BYTE>> * CModGame::GetSmallImagesRef() const
 {
 	return &m_small_images;
+}
+
+const std::vector<CardData_t> * CModGame::GetCardDataRef() const
+{
+	return &m_cards;
 }
