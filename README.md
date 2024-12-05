@@ -12,3 +12,5 @@ This tool attaches to ePSXe.exe and displays all possible fusion during duels!
 ## Demo
 
 A full demo is shown here: [Youtube Demo](https://www.youtube.com/watch?v=XycGPxelL8w)
+
+![Pic](https://ibb.co/R9kyRvc)
