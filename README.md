@@ -9,6 +9,8 @@ This tool attaches to ePSXe.exe and displays all possible fusion during duels!
 
 ## Usage
 
+Load `FMR-Helper.sln` in Visual Studio, build and run.
+
 ## Demo
 
 A full demo is shown here: [Youtube Demo](https://www.youtube.com/watch?v=XycGPxelL8w)
